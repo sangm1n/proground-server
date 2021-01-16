@@ -47,6 +47,42 @@ exports.signUp = async function (req, res) {
 }
 
 /***
+ * update : 2021-01-16
+ * 로그인 API
+ */
+exports.logIn = async function (req, res) {
+    const {
+        email, password
+    } = req.body;
+
+    if (!email) return response.status(res, "", "EMPTY_EMAIL");
+    if (!password) return response.status(res, "", "EMPTY_PASSWORD");
+
+    try {
+        const emailRows = await userDao.checkUserEmail(email);
+        const userInfoRows = await userDao.getUserInfo(email);
+        const hashedPassword = await crypto.createHash('sha512').update(password).digest('hex');
+
+        if (emailRows === 0 || hashedPassword !== userInfoRows.password) return response.status(res, "", "FAILED_TO_LOGIN");
+
+        const token = await jwt.sign({
+            userId: userInfoRows.userId
+        },
+        secret_config.jwtsecret,
+        {
+            expiresIn: '365d',
+            subject: 'userId'
+        });
+
+        const result = { jwt: token };
+        return response.status(res, result, "SUCCESS_LOGIN");
+    } catch (err) {
+        logger.error(`App - logIn Query error\n: ${JSON.stringify(err)}`);
+        return false;
+    }
+}
+
+/***
  * update : 2021-01-15
  * JWT 검증 API
  */
