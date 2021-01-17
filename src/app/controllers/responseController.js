@@ -58,6 +58,16 @@ exports.status = function (res, result, status) {
             return convertJson(res, result, false, 2033, "비밀번호와 비밀번호확인 값이 일치하지 않습니다.");
         case "EMPTY_NICKNAME":
             return convertJson(res, result, false, 2040, "닉네임을 입력해주세요.");
+        case "INVALID_NICKNAME":
+            return convertJson(res, result, false, 2041, "닉네임은 7자 미만으로 입력해주세요.");
+        case "EMPTY_HEIGHT":
+            return convertJson(res, result, false, 2042, "키를 입력해주세요.");
+        case "EMPTY_WEIGHT":
+            return convertJson(res, result, false, 2043, "몸무게를 입력해주세요.");
+        case "EMPTY_GENDER":
+            return convertJson(res, result, false, 2044, "성별을 입력해주세요.");
+        case "EMPTY_NAME":
+            return convertJson(res, result, false, 2050, "이름을 입력해주세요.");
 
         // 3000 : 응답 오류
         case "RESPONSE_ERROR":
@@ -71,11 +81,15 @@ exports.status = function (res, result, status) {
         case "FAILED_TO_POST_USER":
             return convertJson(res, result, false, 3013, "회원가입에 실패하였습니다.");
         case "FAILED_TO_LOGIN":
-            return convertJson(res, result, false, 3014, "로그인에 실패하였습니다.");
+            return convertJson(res, result, false, 3014, "이메일 주소 혹은 비밀번호가 일치하지 않습니다.");
         case "FAILED_TO_DELETE_USER":
             return convertJson(res, result, false, 3015, "회원 탈퇴에 실패하였습니다.");
         case "FAILED_TO_PATCH_USER":
             return convertJson(res, result, false, 3016, "개인정보 수정에 실패하였습니다.");
+        case "DUPLICATED_NICKNAME":
+            return convertJson(res, result, false, 3017, "이미 존재하는 닉네임입니다.");
+        case "DUPLICATED_EMAIL":
+            return convertJson(res, result, false, 3018, "이미 존재하는 이메일입니다.");
 
         // 4000 : 데이터베이스 오류
         case "SERVER_ERROR":
