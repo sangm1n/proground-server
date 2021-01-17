@@ -17,13 +17,42 @@ const response = require('../controllers/responseController')
  */
 exports.signUp = async function (req, res) {
     const { 
-        name, email, password, nickname, height, weight, gender
+        name, email, password
     } = req.body;
 
     if (!name) return response.status(res, "", "EMPTY_NAME");
     if (!email) return response.status(res, "", "EMPTY_EMAIL");
     if (!regexEmail.test(email)) return response.status(res, "", "INVALID_EMAIL");
     if (!password) return response.status(res, "", "EMPTY_PASSWORD");
+
+    try {
+        const emailRows = await userDao.checkUserEmail(email);
+        if (emailRows === 1) return response.status(res, "", "DUPLICATED_EMAIL");
+
+        const hashedPassword = await crypto.createHash('sha512').update(password).digest('hex');
+        await userDao.postUserInfo(name, email, hashedPassword);
+        const userInfoRows = await userDao.getUserInfo(email);
+
+        const result = { userId: userInfoRows.userId }
+        return response.status(res, result, "SUCCESS_POST_USER");
+    } catch (err) {
+        logger.error(`App - signUp Query error\n: ${err.message}`);
+        return res.status(500).send(`Error: ${err.message}`);
+    }
+}
+
+/***
+ * update : 2021-01-17
+ * 회원가입 (추가 정보) API
+ */
+exports.signUpAdd = async function (req, res) {
+    const {
+        nickname, height, weight, gender
+    } = req.body;
+    const {
+        userId
+    } = req.params;
+
     if (!nickname) return response.status(res, "", "EMPTY_NICKNAME");
     if (nickname.length > 7) return response.status(res, "", "INVALID_NICKNAME");
     if (!height) return response.status(res, "", "EMPTY_HEIGHT");
@@ -31,17 +60,14 @@ exports.signUp = async function (req, res) {
     if (!gender) return response.status(res, "", "EMPTY_GENDER");
 
     try {
-        const emailRows = await userDao.checkUserEmail(email);
-        if (emailRows === 1) return response.status(res, "", "DUPLICATED_EMAIL");
         const nicknameRows = await userDao.checkUserNickname(nickname);
         if (nicknameRows === 1) return response.status(res, "", "DUPLICATED_NICKNAME");
 
-        const hashedPassword = await crypto.createHash('sha512').update(password).digest('hex');
-        await userDao.postUserInfo(name, email, hashedPassword, nickname, height, weight, gender);
+        await userDao.postUserAddInfo(nickname, height, weight, gender, userId);
 
         return response.status(res, "", "SUCCESS_POST_USER");
     } catch (err) {
-        logger.error(`App - signUp Query error\n: ${err.message}`);
+        logger.error(`App - signUpAdd Query error\n: ${err.message}`);
         return res.status(500).send(`Error: ${err.message}`);
     }
 }
