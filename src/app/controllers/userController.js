@@ -3,6 +3,7 @@ const {logger} = require('../../../config/winston');
 
 const jwt = require('jsonwebtoken');
 const regexEmail = require('regex-email');
+const regexPassword = /^(?=.*[a-zA-z])(?=.*[0-9])(?=.*[!@#$%^*+=-]).{8,}$/;
 const crypto = require('crypto');
 const secret_config = require('../../../config/secret');
 
@@ -10,6 +11,10 @@ const userDao = require('../dao/userDao');
 const { constants } = require('buffer');
 
 const response = require('../../utils/response');
+const passport = require('passport')
+const KakaoStrategy = require('passport-kakao').Strategy
+const axios = require('axios');
+
 
 /***
  * update : 2021-01-15
@@ -24,6 +29,7 @@ exports.signUp = async function (req, res) {
     if (!email) return res.json(response.successFalse(2020, "이메일을 입력해주세요."));
     if (!regexEmail.test(email)) return res.json(response.successFalse(2021, "이메일 형식을 확인해주세요."));
     if (!password) return res.json(response.successFalse(2030, "비밀번호를 입력해주세요."));
+    if (!regexPassword.test(password)) return res.json(response.successFalse(2031, "비밀번호 형식을 확인해주세요."));
 
     try {
         const emailRows = await userDao.checkUserEmail(email);
@@ -114,9 +120,78 @@ exports.logIn = async function (req, res) {
  */
 exports.check = async function (req, res) {
     res.json({
+        result: req.verifiedToken,
         isSuccess: true,
         code: 200,
-        message: "검증 성공",
-        info: req.verifiedToken
+        message: "검증 성공"
     })
 };
+
+/***
+ * update : 2021-01-25
+ * 카카오 로그인 API (테스트)
+ */
+exports.logInKakao = async function (req, res) {
+    const {
+        accessToken
+    } = req.body;
+
+    try {
+        try {
+            kakao_profile = await axios.get('https://kapi.kakao.com/v2/user/me', {
+                headers: {
+                    Authorization: 'Bearer ' + accessToken,
+                    'Content-Type': 'application/json'
+                }
+            });
+        } catch (err) {
+            logger.error(`Can't get kakao profile\n: ${JSON.stringify(err)}`);
+            return res.json(response.successFalse(2000, "유효하지 않은 엑세스 토큰입니다."));;
+        }
+        const data = kakao_profile.data.kakao_account;
+
+        const name = data.profile.nickname;
+        const profile_image = data.profile.profile_image_url;
+        const email = data.email;
+        const gender = data.gender;
+
+        const emailRows = await userDao.checkUserEmail(email);
+        // 이미 존재하는 이메일인 경우 = 회원가입 되어 있는 경우 -> 로그인 처리
+        if (emailRows === 1) {
+            const userInfoRows = await userDao.getUserInfo(email);
+
+            const token = await jwt.sign({
+                userId: userInfoRows.userId
+            },
+            secret_config.jwtsecret,
+            {
+                expiresIn: '365d',
+                subject: 'userId'
+            });
+    
+            const result = { jwt: token };
+            return res.json(response.successTrue(1013, "소셜 로그인에 성공하였습니다.", result));
+        // 그렇지 않은 경우 -> 회원가입 처리
+        } else {
+            await userDao.postUserInfoKakao(name, email, profile_image);
+            const userInfoRows = await userDao.getUserInfo(email);
+
+            const result = { userId: userInfoRows.userId }
+            return res.json(response.successTrue(1012, "소셜 회원가입에 성공하였습니다.", result));
+        }
+    } catch (err) {
+        logger.error(`App - logInKakao Query error\n: ${JSON.stringify(err)}`);
+        return false;
+    }
+}
+
+// 테스트용
+passport.use('kakao-login', new KakaoStrategy({
+    clientID: '091e3895665e66cd5caa8bd6aa8c28c5',
+    clientSecret: '',
+    callbackURL: '/auth/kakao/callback',
+}, (accessToken, refreshToken, profile, done) => {
+    console.log(accessToken);
+    console.log(profile);
+}));
+

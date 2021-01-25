@@ -80,6 +80,23 @@ exports.postUserAddInfo = async function (nickname, height, weight, gender, user
     }
 }
 
+exports.postUserInfoKakao = async function (name, email, profile_image) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        insert into User (userName, email, profileImage, loginStatus) values (?, ?, ?, "S");
+        `
+        const params = [name, email, profile_image];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+    } catch (err) {
+        logger.error(`App - postUserInfoKakao DB Connection error\n: ${err.message}`);
+        return res.status(500).send(`Error: ${err.message}`);
+    }
+}
+
 /***
  * 로그인
  */
