@@ -8,7 +8,7 @@ const jwtMiddleware = (req, res, next) => {
         return res.status(403).json({
             isSuccess:false,
             code: 403,
-            message: '로그인이 되어 있지 않습니다.'
+            message: '로그인이 되어있지 않습니다.'
         });
     }
 
