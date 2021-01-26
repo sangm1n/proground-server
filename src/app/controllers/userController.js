@@ -180,8 +180,6 @@ exports.logInKakao = async function (req, res) {
             logger.error(`Can't get kakao profile\n: ${JSON.stringify(err)}`);
             return res.json(response.successFalse(2000, "유효하지 않은 엑세스 토큰입니다."));;
         }
-        const nicknameRows = await userDao.checkUserNickname(nickname);
-        if (nicknameRows === 1) return res.json(response.successTrue(3017, "이미 존재하는 닉네임입니다."));
         
         const data = kakao_profile.data.kakao_account;
 
@@ -207,6 +205,9 @@ exports.logInKakao = async function (req, res) {
             return res.json(response.successTrue(1013, "소셜 로그인에 성공하였습니다.", result));
         // 그렇지 않은 경우 -> 회원가입 처리
         } else {
+            const nicknameRows = await userDao.checkUserNickname(nickname);
+            if (nicknameRows === 1) return res.json(response.successTrue(3017, "이미 존재하는 닉네임입니다."));
+            
             await userDao.postUserInfoKakao(name, email, nickname, height, weight, gender, profile_image);
 
             return res.json(response.successTrue(1012, "소셜 회원가입에 성공하였습니다."));
