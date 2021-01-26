@@ -180,6 +180,9 @@ exports.logInKakao = async function (req, res) {
             logger.error(`Can't get kakao profile\n: ${JSON.stringify(err)}`);
             return res.json(response.successFalse(2000, "유효하지 않은 엑세스 토큰입니다."));;
         }
+        const nicknameRows = await userDao.checkUserNickname(nickname);
+        if (nicknameRows === 1) return res.json(response.successTrue(3017, "이미 존재하는 닉네임입니다."));
+        
         const data = kakao_profile.data.kakao_account;
 
         const name = data.profile.nickname;
