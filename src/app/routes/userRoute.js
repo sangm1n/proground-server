@@ -4,7 +4,7 @@ module.exports = function(app){
     const jwtMiddleware = require('../../../config/jwtMiddleware');
 
     app.route('/signup').post(user.signUp);
-    app.route('/signup/:userId').post(user.signUpAdd);
+    app.route('/signup/check-email').post(user.checkEmail);
     app.route('/login').post(user.logIn);
     app.route('/login/kakao').post(user.logInKakao);
     app.route('/login/auto').get(jwtMiddleware, user.check);
