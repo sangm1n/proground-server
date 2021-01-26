@@ -45,13 +45,13 @@ exports.checkUserNickname = async function (nickname) {
 }
 
 // 사용자 정보 입력
-exports.postUserInfo = async function (name, email, password) {
+exports.postUserInfo = async function (name, email, password, nickname, height, weight, gender) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        insert into User (userName, email, password, loginStatus) values (?, ?, ?, "G");
-        `
-        const params = [name, email, password];
+            insert into User (userName, email, password, nickname, height, weight, gender, loginStatus) values (?, ?, ?, ?, ?, ?, ?, "G");
+            `
+        const params = [name, email, password, nickname, height, weight, gender];
         const [rows] = await connection.query(
             query, params
         );
@@ -80,13 +80,14 @@ exports.postUserAddInfo = async function (nickname, height, weight, gender, user
     }
 }
 
-exports.postUserInfoKakao = async function (name, email, profile_image) {
+// 카카오 회원가입 및 로그인
+exports.postUserInfoKakao = async function (name, email, nickname, height, weight, gender, profile_image) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        insert into User (userName, email, profileImage, loginStatus) values (?, ?, ?, "S");
+        insert into User (userName, email, nickname, height, weight, gender, profileImage, loginStatus) values (?, ?, ?, ?, ?, ?, ?, "S");
         `
-        const params = [name, email, profile_image];
+        const params = [name, email, nickname, height, weight, gender, profile_image];
         const [rows] = await connection.query(
             query, params
         );
