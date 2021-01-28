@@ -22,34 +22,41 @@ const axios = require('axios');
  */
 exports.signUp = async function (req, res) {
     const { 
-        name, email, password, nickname, height, weight, gender
+        name, email, password, nickname, height, weight, gender, loginStatus
     } = req.body;
+    let status;
 
     if (!name) return res.json(response.successFalse(2010, "이름을 입력해주세요."));
     if (!email) return res.json(response.successFalse(2020, "이메일을 입력해주세요."));
     if (!regexEmail.test(email)) return res.json(response.successFalse(2021, "이메일 형식을 확인해주세요."));
-    if (!password) return res.json(response.successFalse(2030, "비밀번호를 입력해주세요."));
-    if (!regexPassword.test(password)) return res.json(response.successFalse(2031, "비밀번호 형식을 확인해주세요."));
+    if (!password && !loginStatus) return res.json(response.successFalse(2030, "비밀번호를 입력해주세요."));
+    if (!regexPassword.test(password) && !loginStatus) return res.json(response.successFalse(2031, "비밀번호 형식을 확인해주세요."));
     if (!nickname) return res.json(response.successFalse(2040, "닉네임을 입력해주세요."));
     if (nickname.length > 7) return res.json(response.successFalse(2041, "닉네임은 7자 미만으로 입력해주세요."));
     if (!height) return res.json(response.successFalse(2042, "키를 입력해주세요."));
     if (!weight) return res.json(response.successFalse(2043, "몸무게를 입력해주세요."));
     if (!gender) return res.json(response.successFalse(2044, "성별을 입력해주세요."));
+    if (!loginStatus) status = 'G' 
+    else status = loginStatus;
 
     try {
         const emailRows = await userDao.checkUserEmail(email);
         const nicknameRows = await userDao.checkUserNickname(nickname);
 
         if (emailRows === 1) return res.json(response.successFalse(3018, "이미 존재하는 이메일입니다."));
-        if (nicknameRows === 1) return res.json(response.successTrue(3017, "이미 존재하는 닉네임입니다."));
+        if (nicknameRows === 1) return res.json(response.successFalse(3017, "이미 존재하는 닉네임입니다."));
 
-        const hashedPassword = await crypto.createHash('sha512').update(password).digest('hex');
-        await userDao.postUserInfo(name, email, hashedPassword, nickname, height, weight, gender);
-        
+        if (status == 'S') {
+            await userDao.postUserInfo(name, email, '', nickname, height, weight, gender, status);
+        } else if (status == 'G') {
+            const hashedPassword = await crypto.createHash('sha512').update(password).digest('hex');
+            await userDao.postUserInfo(name, email, hashedPassword, nickname, height, weight, gender, status);
+        }
+
         return res.json(response.successTrue(1012, "회원가입에 성공하였습니다."));
     } catch (err) {
         logger.error(`App - signUp Query error\n: ${err.message}`);
-        return res.status(500).send(`Error: ${err.message}`);
+        return res.json(responsce.successFalse(4000, "서버와의 통신에 실패하였습니다."));
     }
 }
 
@@ -68,7 +75,7 @@ exports.checkEmail = async function (req, res) {
         else return res.json(response.successTrue(1008, "회원가입 가능한 이메일입니다.", {status: true}));
     } catch (err) {
         logger.error(`App - checkEmail Query error\n: ${err.message}`);
-        return res.status(500).send(`Error: ${err.message}`);
+        return res.json(responsce.successFalse(4000, "서버와의 통신에 실패하였습니다."));
     }
 }
 
@@ -99,7 +106,7 @@ exports.signUpAdd = async function (req, res) {
         return res.json(response.successTrue(1012, "회원가입에 성공하였습니다."));
     } catch (err) {
         logger.error(`App - signUpAdd Query error\n: ${err.message}`);
-        return res.status(500).send(`Error: ${err.message}`);
+        return res.json(responsce.successFalse(4000, "서버와의 통신에 실패하였습니다."));
     }
 }
 
@@ -135,7 +142,7 @@ exports.logIn = async function (req, res) {
         return res.json(response.successTrue(1013, "로그인에 성공하였습니다.", result));
     } catch (err) {
         logger.error(`App - logIn Query error\n: ${JSON.stringify(err)}`);
-        return false;
+        return res.json(responsce.successFalse(4000, "서버와의 통신에 실패하였습니다."));
     }
 }
 
@@ -153,19 +160,13 @@ exports.check = async function (req, res) {
 };
 
 /***
- * update : 2021-01-26
+ * update : 2021-01-27
  * 카카오 로그인 API
  */
 exports.logInKakao = async function (req, res) {
     const {
-        accessToken, nickname, height, weight, gender
+        accessToken
     } = req.body;
-
-    if (!nickname) return res.json(response.successFalse(2040, "닉네임을 입력해주세요."));
-    if (nickname.length > 7) return res.json(response.successFalse(2041, "닉네임은 7자 미만으로 입력해주세요."));
-    if (!height) return res.json(response.successFalse(2042, "키를 입력해주세요."));
-    if (!weight) return res.json(response.successFalse(2043, "몸무게를 입력해주세요."));
-    if (!gender) return res.json(response.successFalse(2044, "성별을 입력해주세요."));
 
     try {
         let kakao_profile;
@@ -185,7 +186,6 @@ exports.logInKakao = async function (req, res) {
 
         const name = data.profile.nickname;
         const email = data.email;
-        const profile_image = data.profile.profile_image_url;
 
         const emailRows = await userDao.checkUserEmail(email);
         // 이미 존재하는 이메일인 경우 = 회원가입 되어 있는 경우 -> 로그인 처리
@@ -205,16 +205,16 @@ exports.logInKakao = async function (req, res) {
             return res.json(response.successTrue(1013, "소셜 로그인에 성공하였습니다.", result));
         // 그렇지 않은 경우 -> 회원가입 처리
         } else {
-            const nicknameRows = await userDao.checkUserNickname(nickname);
-            if (nicknameRows === 1) return res.json(response.successTrue(3017, "이미 존재하는 닉네임입니다."));
-            
-            await userDao.postUserInfoKakao(name, email, nickname, height, weight, gender, profile_image);
-
-            return res.json(response.successTrue(1012, "소셜 회원가입에 성공하였습니다."));
+            const result = {
+                name: name,
+                email: email,
+                loginStatus: 'S'
+            };
+            return res.json(response.successTrue(1011, "회원가입 가능합니다.", result));
         }
     } catch (err) {
         logger.error(`App - logInKakao Query error\n: ${JSON.stringify(err)}`);
-        return false;
+        return res.json(responsce.successFalse(4000, "서버와의 통신에 실패하였습니다."));
     }
 }
 

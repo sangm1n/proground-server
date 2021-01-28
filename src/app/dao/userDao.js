@@ -20,7 +20,7 @@ exports.checkUserEmail = async function (email) {
         return rows[0]['exist'];
     } catch (err) {
         logger.error(`App - checkUserEmail DB Connection error\n: ${err.message}`);
-        return res.status(500).send(`Error: ${err.message}`);
+        return res.json(responsce.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
 
@@ -40,25 +40,25 @@ exports.checkUserNickname = async function (nickname) {
         return rows[0]['exist'];
     } catch (err) {
         logger.error(`App - checkUserNickname DB Connection error\n: ${err.message}`);
-        return res.status(500).send(`Error: ${err.message}`);
+        return res.json(responsce.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
 
 // 사용자 정보 입력
-exports.postUserInfo = async function (name, email, password, nickname, height, weight, gender) {
+exports.postUserInfo = async function (name, email, password, nickname, height, weight, gender, loginStatus) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-            insert into User (userName, email, password, nickname, height, weight, gender, loginStatus) values (?, ?, ?, ?, ?, ?, ?, "G");
+            insert into User (userName, email, password, nickname, height, weight, gender, loginStatus) values (?, ?, ?, ?, ?, ?, ?, ?);
             `
-        const params = [name, email, password, nickname, height, weight, gender];
+        const params = [name, email, password, nickname, height, weight, gender, loginStatus];
         const [rows] = await connection.query(
             query, params
         );
         connection.release();
     } catch (err) {
         logger.error(`App - postUserInfo DB Connection error\n: ${err.message}`);
-        return res.status(500).send(`Error: ${err.message}`);
+        return res.json(responsce.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
 
@@ -76,7 +76,7 @@ exports.postUserAddInfo = async function (nickname, height, weight, gender, user
         connection.release();
     } catch (err) {
         logger.error(`App - postUserAddInfo DB Connection error\n: ${err.message}`);
-        return res.status(500).send(`Error: ${err.message}`);
+        return res.json(responsce.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
 
@@ -94,7 +94,7 @@ exports.postUserInfoKakao = async function (name, email, nickname, height, weigh
         connection.release();
     } catch (err) {
         logger.error(`App - postUserInfoKakao DB Connection error\n: ${err.message}`);
-        return res.status(500).send(`Error: ${err.message}`);
+        return res.json(responsce.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
 
@@ -117,6 +117,6 @@ exports.getUserInfo = async function (email) {
         return rows[0];
     } catch (err) {
         logger.error(`App - getUserInfo DB Connection error\n: ${err.message}`);
-        return res.status(500).send(`Error: ${err.message}`);
+        return res.json(responsce.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
