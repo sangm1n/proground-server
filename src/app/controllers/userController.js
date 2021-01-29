@@ -1,5 +1,6 @@
 const {pool} = require('../../../config/database');
 const {logger} = require('../../../config/winston');
+const response = require('../../utils/response');
 
 const jwt = require('jsonwebtoken');
 const regexEmail = require('regex-email');
@@ -10,14 +11,13 @@ const secret_config = require('../../../config/secret');
 const userDao = require('../dao/userDao');
 const { constants } = require('buffer');
 
-const response = require('../../utils/response');
 const passport = require('passport')
 const KakaoStrategy = require('passport-kakao').Strategy
 const axios = require('axios');
 
 
 /***
- * update : 2021-01-26
+ * update : 2021-01-29
  * 회원가입 API
  */
 exports.signUp = async function (req, res) {
@@ -52,11 +52,22 @@ exports.signUp = async function (req, res) {
             const hashedPassword = await crypto.createHash('sha512').update(password).digest('hex');
             await userDao.postUserInfo(name, email, hashedPassword, nickname, height, weight, gender, status);
         }
+        
+        const userInfoRows = await userDao.getUserInfo(email);
+        const token = await jwt.sign({
+            userId: userInfoRows.userId
+        },
+        secret_config.jwtsecret,
+        {
+            expiresIn: '365d',
+            subject: 'userId'
+        });
 
-        return res.json(response.successTrue(1012, "회원가입에 성공하였습니다."));
+        const result = { jwt: token };
+        return res.json(response.successTrue(1012, "회원가입에 성공하였습니다.", result));
     } catch (err) {
         logger.error(`App - signUp Query error\n: ${err.message}`);
-        return res.json(responsce.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
     }
 }
 
@@ -75,7 +86,7 @@ exports.checkEmail = async function (req, res) {
         else return res.json(response.successTrue(1008, "회원가입 가능한 이메일입니다.", {status: true}));
     } catch (err) {
         logger.error(`App - checkEmail Query error\n: ${err.message}`);
-        return res.json(responsce.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
     }
 }
 
@@ -106,7 +117,7 @@ exports.signUpAdd = async function (req, res) {
         return res.json(response.successTrue(1012, "회원가입에 성공하였습니다."));
     } catch (err) {
         logger.error(`App - signUpAdd Query error\n: ${err.message}`);
-        return res.json(responsce.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
     }
 }
 
@@ -142,7 +153,7 @@ exports.logIn = async function (req, res) {
         return res.json(response.successTrue(1013, "로그인에 성공하였습니다.", result));
     } catch (err) {
         logger.error(`App - logIn Query error\n: ${JSON.stringify(err)}`);
-        return res.json(responsce.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
     }
 }
 
@@ -214,7 +225,7 @@ exports.logInKakao = async function (req, res) {
         }
     } catch (err) {
         logger.error(`App - logInKakao Query error\n: ${JSON.stringify(err)}`);
-        return res.json(responsce.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
     }
 }
 
