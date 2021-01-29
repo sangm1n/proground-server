@@ -1,4 +1,4 @@
-const { response } = require("express");
+const response = require('../../utils/response');
 const { pool } = require("../../../config/database");
 
 /***
@@ -20,7 +20,7 @@ exports.checkUserEmail = async function (email) {
         return rows[0]['exist'];
     } catch (err) {
         logger.error(`App - checkUserEmail DB Connection error\n: ${err.message}`);
-        return res.json(responsce.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
 
@@ -40,7 +40,7 @@ exports.checkUserNickname = async function (nickname) {
         return rows[0]['exist'];
     } catch (err) {
         logger.error(`App - checkUserNickname DB Connection error\n: ${err.message}`);
-        return res.json(responsce.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
 
@@ -58,7 +58,7 @@ exports.postUserInfo = async function (name, email, password, nickname, height, 
         connection.release();
     } catch (err) {
         logger.error(`App - postUserInfo DB Connection error\n: ${err.message}`);
-        return res.json(responsce.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
 
@@ -76,7 +76,7 @@ exports.postUserAddInfo = async function (nickname, height, weight, gender, user
         connection.release();
     } catch (err) {
         logger.error(`App - postUserAddInfo DB Connection error\n: ${err.message}`);
-        return res.json(responsce.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
 
@@ -94,7 +94,7 @@ exports.postUserInfoKakao = async function (name, email, nickname, height, weigh
         connection.release();
     } catch (err) {
         logger.error(`App - postUserInfoKakao DB Connection error\n: ${err.message}`);
-        return res.json(responsce.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
 
@@ -117,6 +117,6 @@ exports.getUserInfo = async function (email) {
         return rows[0];
     } catch (err) {
         logger.error(`App - getUserInfo DB Connection error\n: ${err.message}`);
-        return res.json(responsce.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
