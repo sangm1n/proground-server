@@ -162,12 +162,8 @@ exports.logIn = async function (req, res) {
  * JWT 검증 API
  */
 exports.check = async function (req, res) {
-    res.json({
-        result: req.verifiedToken,
-        isSuccess: true,
-        code: 200,
-        message: "검증 성공"
-    })
+    result = {userId: req.verifiedToken.userId}
+    return res.json(response.successTrue(1050, "JWT 검증에 성공하였습니다.", result));
 };
 
 /***
