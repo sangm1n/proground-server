@@ -5,7 +5,7 @@ const jwtMiddleware = (req, res, next) => {
     const token = req.headers['x-access-token'] || req.query.token;
     // token does not exist
     if(!token) {
-        return res.status(4002).json({
+        return res.status(403).json({
             isSuccess:false,
             code: 4002,
             message: '로그인이 되어있지 않습니다.'
@@ -24,7 +24,7 @@ const jwtMiddleware = (req, res, next) => {
 
     // if it has failed to verify, it will return an error message
     const onError = (error) => {
-        res.status(4003).json({
+        res.status(403).json({
             isSuccess:false,
             code: 4003,
             message:"JWT 검증에 실패하였습니다."
