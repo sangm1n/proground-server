@@ -13,6 +13,8 @@ module.exports = function(app){
     app.route('/login/kakao').post(user.logInKakao);
     app.route('/login/auto').get(jwtMiddleware, user.check);
 
+    app.route('/user/password').post(jwtMiddleware, user.findPassword);
+
 
     // 테스트용
     app.route('/image').post(upload('/profile').single('img'));

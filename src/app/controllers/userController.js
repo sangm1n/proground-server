@@ -225,6 +225,60 @@ exports.logInKakao = async function (req, res) {
     }
 }
 
+/***
+ * update : 2021-01-31
+ * 비밀번호 찾기 API
+ */
+const smtpTransport = require('../../../config/email');
+
+exports.findPassword = async function (req, res) {
+    const userId = req.verifiedToken.userId;
+    let {
+        password
+    } = req.body;
+    
+    try {
+        const emailRows = await userDao.getUserEmail(userId);
+        
+        // 비밀번호 찾기
+        if (!password) {
+            password = Math.random().toString(36).slice(6);
+            const hashedPassword = await crypto.createHash('sha512').update(password).digest('hex');
+
+            const mailOptions = {
+                from: secret_config.ADMIN_EMAIL,
+                to: emailRows,
+                subject: "프로그라운드 임시 비밀번호 발급",
+                html: `<p>임시 비밀번호는 <b>${password}</b> 입니다.</p>`
+            };
+
+            await userDao.patchPassword(hashedPassword, userId);
+
+            await smtpTransport.sendMail(mailOptions, (err, respond) => {
+                if (err) {
+                    smtpTransport.close();
+                    logger.error(`App - passwordSendMail Query error\n: ${JSON.stringify(err)}`);
+                    return res.json(response.successFalse(2030, "임시 비밀번호 발급에 실패했습니다."));
+                } else {
+                    smtpTransport.close();
+                    return res.json(response.successTrue(1030, "임시 비밀번호가 성공적으로 발급되었습니다."));
+                }
+            });
+        // 비밀번호 변경
+        } else {
+            if (!regexPassword.test(password)) return res.json(response.successFalse(2031, "비밀번호 형식을 확인해주세요."));
+
+            const hashedPassword = await crypto.createHash('sha512').update(password).digest('hex');
+            await userDao.patchPassword(hashedPassword, userId);
+
+            return res.json(response.successTrue(1031, "비밀번호를 성공적으로 변경했습니다."));
+        }
+    } catch (err) {
+        logger.error(`App - findPassword Query error\n: ${JSON.stringify(err)}`);
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+    }
+}
+
 // 테스트용
 passport.use('kakao-login', new KakaoStrategy({
     clientID: '091e3895665e66cd5caa8bd6aa8c28c5',

@@ -49,8 +49,8 @@ exports.postUserInfo = async function (name, email, password, nickname, height, 
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-            insert into User (userName, email, password, nickname, height, weight, gender, loginStatus) values (?, ?, ?, ?, ?, ?, ?, ?);
-            `
+        insert into User (userName, email, password, nickname, height, weight, gender, loginStatus) values (?, ?, ?, ?, ?, ?, ?, ?);
+        `
         const params = [name, email, password, nickname, height, weight, gender, loginStatus];
         const [rows] = await connection.query(
             query, params
@@ -117,6 +117,47 @@ exports.getUserInfo = async function (email) {
         return rows[0];
     } catch (err) {
         logger.error(`App - getUserInfo DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+/***
+ * 비밀번호 찾기
+ */
+// 사용자 이메일 얻기
+exports.getUserEmail = async function (userId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select email from User where userId = ?;
+        `;
+        const params = [userId];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+
+        return rows[0]['email'];
+    } catch (err) {
+        logger.error(`App - getUserEmail DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+// 임시 비밀번호로 변경
+exports.patchPassword = async function (password, userId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        update User set password = ? where userId = ?;
+        `;
+        const params = [password, userId];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+    } catch (err) {
+        logger.error(`App - patchPassword DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
