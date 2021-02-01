@@ -13,6 +13,8 @@ module.exports = function(app){
     app.route('/login/kakao').post(user.logInKakao);
     app.route('/login/auto').get(jwtMiddleware, user.check);
 
+    app.route('/user/profile').get(jwtMiddleware, user.profile);
+    app.route('/user/profile').patch(jwtMiddleware, user.updateProfile);
     app.route('/user/password').post(jwtMiddleware, user.findPassword);
 
 
