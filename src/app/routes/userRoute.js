@@ -5,7 +5,7 @@ module.exports = function(app){
     const user = require('../controllers/userController');
     const jwtMiddleware = require('../../../config/jwtMiddleware');
 
-    const upload = require('../../utils/awsS3');
+    const s3 = require('../../utils/awsS3');
 
     app.route('/signup').post(user.signUp);
     app.route('/signup/check-email').post(user.checkEmail);
@@ -15,11 +15,11 @@ module.exports = function(app){
 
     app.route('/user/profile').get(jwtMiddleware, user.profile);
     app.route('/user/profile').patch(jwtMiddleware, user.updateProfile);
+    app.route('/user/profile/image').patch(jwtMiddleware, s3.upload('/profile').single('img'), user.updateProfileImage);
     app.route('/user/password').post(jwtMiddleware, user.findPassword);
 
-
     // 테스트용
-    app.route('/image').post(upload('/profile').single('img'));
+    app.route('/image').post(s3.upload('/profile').single('img'));
     app.route('/kakao').get(passport.authenticate('kakao-login'));
     app.route('/auth/kakao/callback').get(passport.authenticate('kakao-login', {
         failureRedirect: '/'
