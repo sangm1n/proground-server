@@ -161,3 +161,66 @@ exports.patchPassword = async function (password, userId) {
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
+
+/***
+ * 프로필 관련
+ */
+// 프로필 조회
+exports.getUserProfile = async function (userId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select profileImage, userName, nickname, email, height, weight, gender from User where userId = ?;
+        `;
+        const params = [userId];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+
+        return rows[0];
+    } catch (err) {
+        logger.error(`App - getUserProfile DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+// 프로필 정보 수정
+exports.patchProfileInfo = async function (name, nickname, email, height, weight, gender, userId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        update User
+        set userName = ?, nickname = ?, email = ?, height = ?, weight = ?, gender = ?
+        where userId = ?
+        `;
+        const params = [name, nickname, email, height, weight, gender, userId];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+    } catch (err) {
+        logger.error(`App - patchProfileInfo DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+// 프로필 이미지 수정
+exports.patchProfileImage = async function (profileImage, userId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        update User
+        set profileImage = ?
+        where userId = ?
+        `;
+        const params = [profileImage, userId];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+    } catch (err) {
+        logger.error(`App - patchProfileImage DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}

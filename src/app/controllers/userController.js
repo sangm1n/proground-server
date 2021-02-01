@@ -15,6 +15,7 @@ const passport = require('passport')
 const KakaoStrategy = require('passport-kakao').Strategy
 const axios = require('axios');
 
+const smtpTransport = require('../../../config/email');
 
 /***
  * update : 2021-01-29
@@ -229,8 +230,6 @@ exports.logInKakao = async function (req, res) {
  * update : 2021-01-31
  * 비밀번호 찾기 API
  */
-const smtpTransport = require('../../../config/email');
-
 exports.findPassword = async function (req, res) {
     const userId = req.verifiedToken.userId;
     let {
@@ -279,6 +278,91 @@ exports.findPassword = async function (req, res) {
     }
 }
 
+/***
+ * update : 2021-01-31
+ * 프로필 조회 API
+ */
+exports.profile = async function (req, res) {
+    const userId = req.verifiedToken.userId;
+    
+    try {
+        const profileRows = await userDao.getUserProfile(userId);
+
+        return res.json(response.successTrue(1055, "프로필 조회에 성공하였습니다.", profileRows));
+    } catch (err) {
+        logger.error(`App - findPassword Query error\n: ${JSON.stringify(err)}`);
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+    }
+}
+
+/***
+ * update : 2021-01-31
+ * 프로필 정보 수정 API
+ */
+exports.updateProfile = async function (req, res) {
+    const userId = req.verifiedToken.userId;
+    const {
+        name, nickname, email, height, weight, gender
+    } = req.body;
+
+    if (!name) return res.json(response.successFalse(2010, "이름을 입력해주세요."));
+    if (!email) return res.json(response.successFalse(2020, "이메일을 입력해주세요."));
+    if (!regexEmail.test(email)) return res.json(response.successFalse(2021, "이메일 형식을 확인해주세요."));
+    if (!nickname) return res.json(response.successFalse(2040, "닉네임을 입력해주세요."));
+    if (nickname.length > 7) return res.json(response.successFalse(2041, "닉네임은 7자 미만으로 입력해주세요."));
+    if (!height) return res.json(response.successFalse(2042, "키를 입력해주세요."));
+    if (!weight) return res.json(response.successFalse(2043, "몸무게를 입력해주세요."));
+    if (!gender) return res.json(response.successFalse(2044, "성별을 입력해주세요."));
+    
+    try {
+        await userDao.patchProfileInfo(name, nickname, email, height, weight, gender, userId);
+        const profileRows = await userDao.getUserProfile(userId);
+
+        return res.json(response.successTrue(1060, "프로필 정보 수정에 성공하였습니다.", profileRows));
+    } catch (err) {
+        logger.error(`App - updateProfile Query error\n: ${JSON.stringify(err)}`);
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+    }
+}
+
+/***
+ * update : 2021-01-31
+ * 프로필 이미지 수정 API
+ */
+const s3 = require('../../utils/awsS3');
+
+exports.updateProfileImage = async function (req, res) {
+    const userId = req.verifiedToken.userId;
+    const {
+        originImage
+    } = req.query;
+    let flag = true;
+
+    if (!originImage) flag = false;
+    
+    try {
+        // 기존 프로필 이미지가 있는 경우 -> 삭제 후 수정
+        if (flag) {
+            const fileName = originImage.split('/')[4];
+            s3.erase('/profile', fileName);
+        }
+        
+        if (!req.file) {
+            await userDao.patchProfileImage(null, userId);
+
+            return res.json(response.successTrue(1062, "기본 프로필 이미지로 변경하였습니다."));
+        } else {
+            const newProfile = req.file.locaion;
+            await userDao.patchProfileImage(newProfile, userId);
+
+            return res.json(response.successTrue(1061, "프로필 이미지 수정에 성공하였습니다."));
+        }
+    } catch (err) {
+        logger.error(`App - updateProfileImage Query error\n: ${JSON.stringify(err)}`);
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+    }
+}
+
 // 테스트용
 passport.use('kakao-login', new KakaoStrategy({
     clientID: '091e3895665e66cd5caa8bd6aa8c28c5',
@@ -288,4 +372,3 @@ passport.use('kakao-login', new KakaoStrategy({
     console.log(accessToken);
     console.log(profile);
 }));
-
