@@ -315,6 +315,9 @@ exports.updateProfile = async function (req, res) {
     if (!gender) return res.json(response.successFalse(2044, "성별을 입력해주세요."));
     
     try {
+        const userEmailRows = await userDao.getUserEmail(userId);
+        if (userEmailRows != email) return res.json(response.successFalse(2045, "이메일은 변경할 수 없습니다."));
+
         await userDao.patchProfileInfo(name, nickname, email, height, weight, gender, userId);
         const profileRows = await userDao.getUserProfile(userId);
 
