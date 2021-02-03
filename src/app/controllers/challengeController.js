@@ -21,6 +21,8 @@ exports.allChallenges = async function (req, res) {
         page = size * (page - 1);
         const challengeRows = await challengeDao.getAllChallenges(page, size);
 
+        if (challengeRows.length === 0) return res.json(response.successTrue(1033, "참여중인 챌린지가 없습니다."));
+
         return res.json(response.successTrue(1020, "챌린지 조회에 성공하였습니다.", challengeRows));
     } catch (err) {
         logger.error(`App - allChallenges Query error\n: ${err.message}`);
@@ -45,6 +47,8 @@ exports.myChallenge = async function (req, res) {
     try {
         page = size * (page - 1);
         const challengeRows = await challengeDao.getMyChallenge(userId, page, size);
+
+        if (challengeRows.length === 0) return res.json(response.successTrue(1033, "참여중인 챌린지가 없습니다."));
 
         return res.json(response.successTrue(1020, "챌린지 조회에 성공하였습니다.", challengeRows));
     } catch (err) {
