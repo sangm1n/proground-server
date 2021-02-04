@@ -17,6 +17,7 @@ module.exports = function(app){
     app.route('/user/profile').patch(jwtMiddleware, user.updateProfile);
     app.route('/user/profile/image').patch(jwtMiddleware, s3.upload('/profile').single('img'), user.updateProfileImage);
     app.route('/user/password').post(jwtMiddleware, user.findPassword);
+    app.route('/user/level').get(jwtMiddleware, user.userLevel);
 
     // 테스트용
     app.route('/image').post(s3.upload('/profile').single('img'));

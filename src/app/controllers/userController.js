@@ -15,6 +15,7 @@ const passport = require('passport')
 const KakaoStrategy = require('passport-kakao').Strategy
 const axios = require('axios');
 
+const s3 = require('../../utils/awsS3');
 const smtpTransport = require('../../../config/email');
 
 /***
@@ -332,8 +333,6 @@ exports.updateProfile = async function (req, res) {
  * update : 2021-01-31
  * 프로필 이미지 수정 API
  */
-const s3 = require('../../utils/awsS3');
-
 exports.updateProfileImage = async function (req, res) {
     const userId = req.verifiedToken.userId;
     const {
@@ -355,13 +354,31 @@ exports.updateProfileImage = async function (req, res) {
 
             return res.json(response.successTrue(1062, "기본 프로필 이미지로 변경하였습니다."));
         } else {
-            const newProfile = req.file.locaion;
+            const newProfile = req.file.location;
             await userDao.patchProfileImage(newProfile, userId);
 
             return res.json(response.successTrue(1061, "프로필 이미지 수정에 성공하였습니다."));
         }
     } catch (err) {
         logger.error(`App - updateProfileImage Query error\n: ${JSON.stringify(err)}`);
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+    }
+}
+
+/***
+ * update : 2021-02-04
+ * 사용자 레벨 조회 API
+ */
+exports.userLevel = async function (req, res) {
+    const userId = req.verifiedToken.userId;
+    
+    try {
+        const levelRows = await userDao.getUserLevel(userId);
+        if (!levelRows.level) return res.json(response.successFalse(3050, "사용자 레벨 조회에 실패하였습니다."));
+
+        return res.json(response.successTrue(1070, "사용자 레벨 조회에 성공하였습니다.", levelRows));
+    } catch (err) {
+        logger.error(`App - userLevel Query error\n: ${JSON.stringify(err)}`);
         return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
     }
 }
