@@ -107,6 +107,9 @@ exports.registerChallenge = async function (req, res) {
         const checkRows = await challengeDao.checkChallenge(challengeId);
         if (checkRows === 0) return res.json(response.successFalse(3100, "존재하지 않는 챌린지입니다."));
         
+        const checkLevelRows = await challengeDao.checkChallengeLevel(userId, challengeId);
+        if (checkLevelRows === 0) return res.json(response.successFalse(3102, "레벨에 맞지 않는 챌린지입니다."));
+        
         const checkRegRows = await challengeDao.checkRegisterChallenge(userId, challengeId);
         if (checkRegRows === 1) return res.json(response.successFalse(3101, "이미 참가한 챌린지입니다."));
 
@@ -136,6 +139,80 @@ exports.outChallenge = async function (req, res) {
         return res.json(response.successTrue(1031, "챌린지 탈퇴에 성공하였습니다."));
     } catch (err) {
         logger.error(`App - outChallenge Query error\n: ${err.message}`);
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+    }
+}
+
+/***
+ * update : 2021-02-04
+ * 챌린지 통계 "오늘" 조회
+ */
+exports.todayChallengeStastics = async function (req, res) {
+    const userId = req.verifiedToken.userId;
+    const {challengeId} = req.params;
+    let {
+        page, size
+    } = req.query;
+
+    if (!page) return res.json(response.successFalse(2060, "페이지를 입력해주세요."));
+    if (!size) return res.json(response.successFalse(2070, "사이즈를 입력해주세요."));
+    if (page < 1) return res.json(response.successFalse(2061, "페이지 번호를 확인해주세요."));
+    if (!challengeId) return res.json(response.successFalse(2100, "챌린지 번호를 입력해주세요."));
+
+    try {
+        page = size * (page - 1);
+
+        const challengeType = await challengeDao.getChallengeType(challengeId);
+        const statisticInfoRows = await challengeDao.getStatsInfo(challengeId, userId, page, size);
+
+        // 목표달성
+        if (challengeType === 'A') {
+            
+        // 경쟁전
+        } else {
+            return res.json(response.successTrue(1, "dd", statisticInfoRows));
+        }
+
+        return res.json(response.successTrue(1031, "챌린지 탈퇴에 성공하였습니다."));
+    } catch (err) {
+        logger.error(`App - todayChallengeStastics Query error\n: ${err.message}`);
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+    }
+}
+
+/***
+ * update : 2021-02-04
+ * 챌린지 통계 "누적" 조회
+ */
+exports.totalChallengeStastics = async function (req, res) {
+    const userId = req.verifiedToken.userId;
+    const {challengeId} = req.params;
+    let {
+        page, size
+    } = req.query;
+
+    if (!page) return res.json(response.successFalse(2060, "페이지를 입력해주세요."));
+    if (!size) return res.json(response.successFalse(2070, "사이즈를 입력해주세요."));
+    if (page < 1) return res.json(response.successFalse(2061, "페이지 번호를 확인해주세요."));
+    if (!challengeId) return res.json(response.successFalse(2100, "챌린지 번호를 입력해주세요."));
+
+    try {
+        page = size * (page - 1);
+
+        const challengeType = await challengeDao.getChallengeType(challengeId);
+        const statisticInfoRows = await challengeDao.getStatsTotalInfo(challengeId, page, size);
+
+        // 목표달성
+        if (challengeType === 'A') {
+
+        // 경쟁전
+        } else {
+            return res.json(response.successTrue(1, "dd", statisticInfoRows));
+        }
+
+        return res.json(response.successTrue(1031, "챌린지 탈퇴에 성공하였습니다."));
+    } catch (err) {
+        logger.error(`App - totalChallengeStastics Query error\n: ${err.message}`);
         return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
     }
 }

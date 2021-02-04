@@ -238,6 +238,30 @@ exports.checkRegisterChallenge = async function (userId, challengeId) {
     }
 }
 
+exports.checkChallengeLevel = async function (userId, challengeId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select exists(select level
+                from UserLevel
+                where userId = ?
+                and level between
+                        (select minLevel from Challenge where challengeId = ? and isDeleted = 'N') and
+                        (select maxLevel from Challenge where challengeId = ? and isDeleted = 'N')) as exist;
+        `;
+        const params = [userId, challengeId, challengeId];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+
+        return rows[0]['exist'];
+    } catch (err) {
+        logger.error(`App - checkChallengeLevel DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
 exports.postChallenge = async function (userId, challengeId, challengeColor) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
@@ -275,6 +299,118 @@ exports.withdrawChallenge = async function (userId, challengeId) {
         connection.release();
     } catch (err) {
         logger.error(`App - checkRegisterChallenge DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+/***
+ * 챌린지 통계
+ */
+// 챌린지 타입 가져오기
+exports.getChallengeType = async function (challengeId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select challengeType from Challenge where challengeId = ?;
+        `;
+        const params = [challengeId];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+
+        return rows[0]['challengeType'];
+    } catch (err) {
+        logger.error(`App - getChallengeType DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.getStatsInfo = async function (challengeId, userId, page, size) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select r.userId,
+            v.userName,
+            v.challengeColor,
+            v.levelColor,
+            distance,
+            if(w.likeCount is null, 0, w.likeCount) as likeCount
+        from Running r
+                join (select uc.userId, userName, challengeColor, x.levelColor, uc.isDeleted
+                    from User u
+                                join UserChallenge uc on u.userId = uc.userId
+                                join (select ul.userId, levelColor
+                                    from Level l
+                                            join UserLevel ul on l.level = ul.level) x on u.userId = x.userId
+                    where u.isDeleted = 'N'
+                        and userType = 'G'
+                    group by uc.userId) v on r.userId = v.userId
+                left join (select r.runningId, count(rl.runningId) as likeCount
+                            from Running r
+                                    join RunningLike rl on r.runningId = rl.runningId
+                            where rl.status = 'Y') w on r.runningId = w.runningId
+        where r.challengeId = ?
+        and v.isDeleted = 'N'
+        and r.isDeleted = 'N'
+        and v.challengeColor = (select challengeColor from UserChallenge where userId = ? and challengeId = ?)
+        and str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H') <= endTime
+        and endTime <= str_to_date(date_format(date_add(now(), interval +1 day), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H')
+        order by distance desc
+        limit ` + page + `, ` + size + `;
+        `;
+        const params = [challengeId, userId, challengeId, page, size];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+
+        return rows;
+    } catch (err) {
+        logger.error(`App - getStatsInfo DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.getStatsTotalInfo = async function (challengeId, page, size) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select r.userId,
+            v.userName,
+            v.challengeColor,
+            v.levelColor,
+            distance,
+            if(w.likeCount is null, 0, w.likeCount) as likeCount
+        from Running r
+                join (select uc.userId, userName, challengeColor, x.levelColor, uc.isDeleted
+                    from User u
+                                join UserChallenge uc on u.userId = uc.userId
+                                join (select ul.userId, levelColor
+                                    from Level l
+                                            join UserLevel ul on l.level = ul.level) x on u.userId = x.userId
+                    where u.isDeleted = 'N'
+                        and userType = 'G'
+                    group by uc.userId) v on r.userId = v.userId
+                left join (select r.runningId, count(rl.runningId) as likeCount
+                            from Running r
+                                    join RunningLike rl on r.runningId = rl.runningId
+                            where rl.status = 'Y') w on r.runningId = w.runningId
+        where r.challengeId = ?
+        and v.isDeleted = 'N'
+        and r.isDeleted = 'N'
+        order by distance desc
+        limit ` + page + `, ` + size + `;
+        `;
+        const params = [challengeId, page, size];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+
+        return rows;
+    } catch (err) {
+        logger.error(`App - getStatsTotalInfo DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
