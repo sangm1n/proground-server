@@ -7,6 +7,6 @@ module.exports = function(app){
     app.route('/challenges/:challengeId').get(challenge.challengeInfo);
     app.route('/challenges/:challengeId').post(jwtMiddleware, challenge.registerChallenge);
     app.route('/challenges/:challengeId/out').post(jwtMiddleware, challenge.outChallenge);
-    app.route('/challenges/:challengeId/stats/today').get(jwtMiddleware, challenge.todayChallengeStastics);
-    app.route('/challenges/:challengeId/stats/total').get(jwtMiddleware, challenge.totalChallengeStastics);
+    app.route('/challenges/:challengeId/statistic').get(jwtMiddleware, challenge.challengeStatistic);
+    app.route('/challenges/:challengeId/graph').get(jwtMiddleware, challenge.challengeGraph);
 };

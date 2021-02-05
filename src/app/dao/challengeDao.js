@@ -73,7 +73,9 @@ exports.getMyChallenge = async function (userId, page, size) {
             v.userCount,
             personnel,
             date_format(startDate, '%y.%m.%d')          as startDate,
-            date_format(endDate, '%y.%m.%d')            as endDate
+            date_format(endDate, '%y.%m.%d')            as endDate,
+            cast(round((timestampdiff(day, startDate, now()) + 1) /
+                (timestampdiff(day, startDate, endDate) + 1) * 100) as unsigned) as ratio
         from Challenge c
                 join UserChallenge uc on c.challengeId = uc.challengeId
                 join (select u.userId, nickname, uc.challengeId
@@ -126,7 +128,7 @@ exports.getChallenge = async function (challengeId) {
             (endDate - startDate)                  as period,
             timestampdiff(day, now(), startDate)   as beforeDate,
             date_format(startDate, '%Y.%c.%e')     as startDate,
-            date_format(endDate, '%c.%e')          as endDate
+            date_format(endDate, '%Y.%c.%e')       as endDate
         from Challenge c
                 join UserChallenge uc on c.challengeId = uc.challengeId
                 join (select count(userId) as userCount, uc.challengeId
@@ -219,6 +221,25 @@ exports.getColor = async function (challengeId) {
 /***
  * 챌린지 참가
  */
+exports.checkMaxChallenge = async function (userId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select count(challengeId) as countChallenge from UserChallenge where userId = ? and isDeleted = 'N';
+        `;
+        const params = [userId];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+
+        return rows[0]['countChallenge'];
+    } catch (err) {
+        logger.error(`App - checkMaxChallenge DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
 exports.checkRegisterChallenge = async function (userId, challengeId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
@@ -286,16 +307,22 @@ exports.postChallenge = async function (userId, challengeId, challengeColor) {
 exports.withdrawChallenge = async function (userId, challengeId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
-        const query = `
+        let query = `
         update UserChallenge
         set isDeleted = 'Y'
         where userId = ?
         and challengeId = ?;
         `;
         const params = [userId, challengeId];
-        const [rows] = await connection.query(
-            query, params
-        );
+        await connection.query(query, params);
+        query = `
+        update Running
+        set isDeleted = 'Y'
+        where userId = ?
+        and challengeId = ?
+        and endTime <= now();
+        `;
+        await connection.query(query, params);
         connection.release();
     } catch (err) {
         logger.error(`App - checkRegisterChallenge DB Connection error\n: ${err.message}`);
@@ -326,25 +353,48 @@ exports.getChallengeType = async function (challengeId) {
     }
 }
 
-exports.getStatsInfo = async function (challengeId, userId, page, size) {
+// 챌린지 팀 가져오기
+exports.getChallengeTeam = async function (userId, challengeId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select challengeTeam from UserChallenge where userId = ? and challengeId = ?;
+        `;
+        const params = [userId, challengeId];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+
+        return rows[0]['challengeTeam'];
+    } catch (err) {
+        logger.error(`App - getChallengeTeam DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.getStatsInfo = async function (challengeId, page, size) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
         select r.userId,
             v.userName,
-            v.challengeColor,
+            v.profileImage,
             v.levelColor,
+            v.challengeTeam,
             distance,
-            if(w.likeCount is null, 0, w.likeCount) as likeCount
+            ifnull(w.likeCount, 0) as likeCount
         from Running r
-                join (select uc.userId, userName, challengeColor, x.levelColor, uc.isDeleted
+                join (select uc.userId, userName, x.levelColor, uc.isDeleted, challengeTeam, profileImage
                     from User u
                                 join UserChallenge uc on u.userId = uc.userId
                                 join (select ul.userId, levelColor
                                     from Level l
                                             join UserLevel ul on l.level = ul.level) x on u.userId = x.userId
                     where u.isDeleted = 'N'
+                        and uc.isDeleted = 'N'
                         and userType = 'G'
+                        and uc.challengeId = ?
                     group by uc.userId) v on r.userId = v.userId
                 left join (select r.runningId, count(rl.runningId) as likeCount
                             from Running r
@@ -353,13 +403,12 @@ exports.getStatsInfo = async function (challengeId, userId, page, size) {
         where r.challengeId = ?
         and v.isDeleted = 'N'
         and r.isDeleted = 'N'
-        and v.challengeColor = (select challengeColor from UserChallenge where userId = ? and challengeId = ?)
         and str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H') <= endTime
         and endTime <= str_to_date(date_format(date_add(now(), interval +1 day), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H')
         order by distance desc
         limit ` + page + `, ` + size + `;
         `;
-        const params = [challengeId, userId, challengeId, page, size];
+        const params = [challengeId, challengeId, page, size];
         const [rows] = await connection.query(
             query, params
         );
@@ -378,19 +427,22 @@ exports.getStatsTotalInfo = async function (challengeId, page, size) {
         const query = `
         select r.userId,
             v.userName,
-            v.challengeColor,
+            v.profileImage,
             v.levelColor,
+            v.challengeTeam,
             distance,
             if(w.likeCount is null, 0, w.likeCount) as likeCount
         from Running r
-                join (select uc.userId, userName, challengeColor, x.levelColor, uc.isDeleted
+                join (select uc.userId, userName, x.levelColor, uc.isDeleted, challengeTeam, profileImage
                     from User u
                                 join UserChallenge uc on u.userId = uc.userId
                                 join (select ul.userId, levelColor
                                     from Level l
                                             join UserLevel ul on l.level = ul.level) x on u.userId = x.userId
                     where u.isDeleted = 'N'
+                        and uc.isDeleted = 'N'
                         and userType = 'G'
+                        and uc.challengeId = ?
                     group by uc.userId) v on r.userId = v.userId
                 left join (select r.runningId, count(rl.runningId) as likeCount
                             from Running r
@@ -402,7 +454,7 @@ exports.getStatsTotalInfo = async function (challengeId, page, size) {
         order by distance desc
         limit ` + page + `, ` + size + `;
         `;
-        const params = [challengeId, page, size];
+        const params = [challengeId, challengeId, page, size];
         const [rows] = await connection.query(
             query, params
         );
@@ -411,6 +463,183 @@ exports.getStatsTotalInfo = async function (challengeId, page, size) {
         return rows;
     } catch (err) {
         logger.error(`App - getStatsTotalInfo DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.getCompetitionGraphToday = async function (challengeId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        let query = `
+        select firstColor, secondColor, firstTeamName, secondTeamName
+        from Challenge
+        where challengeId = ?
+        and isDeleted = 'N';
+        `;
+        let params = [challengeId];
+        let [rows] = await connection.query(query, params);
+        
+        const firstColor = rows[0].firstColor;
+        const secondColor = rows[0].secondColor;
+        const firstTeam = rows[0].firstTeamName;
+        const secondTeam = rows[0].secondTeamName;
+
+        query = `
+        select ifnull(challengeColor, '` + firstColor + `') as challengeColor,
+                ifnull(challengeTeam, '` + firstTeam + `') as challengeTeam,
+                ifnull(sum(distance), 0) as totalDistance
+        from Running r
+                join UserChallenge uc on r.userId = uc.userId
+        where r.challengeId = ?
+        and uc.challengeColor = '` + firstColor + `'
+        and challengeTeam is not null
+        and r.isDeleted = 'N'
+        and uc.isDeleted = 'N'
+        and str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H') <= endTime
+        and endTime <= str_to_date(date_format(date_add(now(), interval +1 day), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H');
+        `;
+        const [firstRows] = await connection.query(query, params);
+
+        query = `
+        select ifnull(challengeColor, '` + secondColor + `') as challengeColor,
+                ifnull(challengeTeam, '` + secondTeam + `') as challengeTeam,
+                ifnull(sum(distance), 0) as totalDistance
+        from Running r
+                join UserChallenge uc on r.userId = uc.userId
+        where r.challengeId = ?
+        and uc.challengeColor = '` + secondColor + `'
+        and challengeTeam is not null
+        and r.isDeleted = 'N'
+        and uc.isDeleted = 'N'
+        and str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H') <= endTime
+        and endTime <= str_to_date(date_format(date_add(now(), interval +1 day), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H');
+        `;
+        const [secondRows] = await connection.query(query, params);
+
+        /*
+        query = `
+        select round((distance / (timestampdiff(day, startDate, endDate) + 1))) as maximum
+        from Challenge
+        where challengeId = ?
+        and isDeleted = 'N';
+        `
+        let params = [challengeId];
+        let [rows] = await connection.query(query, params);
+        
+        const todayMax = rows[0].maximum;
+        */
+
+        connection.release();
+
+        return [firstRows[0], secondRows[0]]
+    } catch (err) {
+        logger.error(`App - getCompetitionGraphToday DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.getCompetitionGraphTotal = async function (challengeId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        let query = `
+        select firstColor, secondColor, firstTeamName, secondTeamName
+        from Challenge
+        where challengeId = ?
+        and isDeleted = 'N';
+        `;
+        let params = [challengeId];
+        let [rows] = await connection.query(query, params);
+        
+        const firstColor = rows[0].firstColor;
+        const secondColor = rows[0].secondColor;
+        const firstTeam = rows[0].firstTeamName;
+        const secondTeam = rows[0].secondTeamName;
+
+        query = `
+        select ifnull(challengeColor, '` + firstColor + `') as challengeColor,
+                ifnull(challengeTeam, '` + firstTeam + `') as challengeTeam,
+                ifnull(sum(distance), 0) as totalDistance
+        from Running r
+                join UserChallenge uc on r.userId = uc.userId
+        where r.challengeId = ?
+        and uc.challengeColor = '` + firstColor + `'
+        and challengeTeam is not null
+        and r.isDeleted = 'N'
+        and uc.isDeleted = 'N';
+        `;
+        const [firstRows] = await connection.query(query, params);
+
+        query = `
+        select ifnull(challengeColor, '` + secondColor + `') as challengeColor,
+                ifnull(challengeTeam, '` + secondTeam + `') as challengeTeam,
+                ifnull(sum(distance), 0) as totalDistance
+        from Running r
+                join UserChallenge uc on r.userId = uc.userId
+        where r.challengeId = ?
+        and uc.challengeColor = '` + secondColor + `'
+        and challengeTeam is not null
+        and r.isDeleted = 'N'
+        and uc.isDeleted = 'N';
+        `;
+        const [secondRows] = await connection.query(query, params);
+        connection.release();
+
+        return [firstRows[0], secondRows[0]]
+    } catch (err) {
+        logger.error(`App - getCompetitionGraphToday DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.getGoalGraphToday = async function (challengeId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        let query = `
+        select firstColor, secondColor, firstTeamName, secondTeamName
+        from Challenge
+        where challengeId = ?
+        and isDeleted = 'N';
+        `;
+        let params = [challengeId];
+        let [rows] = await connection.query(query, params);
+        
+        const firstColor = rows[0].firstColor;
+        const secondColor = rows[0].secondColor;
+        const firstTeam = rows[0].firstTeamName;
+        const secondTeam = rows[0].secondTeamName;
+
+        query = `
+        select ifnull(challengeColor, '` + firstColor + `') as challengeColor,
+                ifnull(challengeTeam, '` + firstTeam + `') as challengeTeam,
+                ifnull(sum(distance), 0) as totalDistance
+        from Running r
+                join UserChallenge uc on r.userId = uc.userId
+        where r.challengeId = ?
+        and uc.challengeColor = '` + firstColor + `'
+        and challengeTeam is not null
+        and r.isDeleted = 'N'
+        and uc.isDeleted = 'N';
+        `;
+        const [firstRows] = await connection.query(query, params);
+
+        query = `
+        select ifnull(challengeColor, '` + secondColor + `') as challengeColor,
+                ifnull(challengeTeam, '` + secondTeam + `') as challengeTeam,
+                ifnull(sum(distance), 0) as totalDistance
+        from Running r
+                join UserChallenge uc on r.userId = uc.userId
+        where r.challengeId = ?
+        and uc.challengeColor = '` + secondColor + `'
+        and challengeTeam is not null
+        and r.isDeleted = 'N'
+        and uc.isDeleted = 'N';
+        `;
+        const [secondRows] = await connection.query(query, params);
+        connection.release();
+
+        return [firstRows[0], secondRows[0]]
+    } catch (err) {
+        logger.error(`App - getCompetitionGraphToday DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
