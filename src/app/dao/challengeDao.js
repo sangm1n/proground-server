@@ -399,7 +399,7 @@ exports.getStatsInfo = async function (challengeId, page, size) {
                 left join (select r.runningId, count(rl.runningId) as likeCount
                             from Running r
                                     join RunningLike rl on r.runningId = rl.runningId
-                            where rl.status = 'Y') w on r.runningId = w.runningId
+                            where rl.status = 'Y' group by r.runningId) w on r.runningId = w.runningId
         where r.challengeId = ?
         and v.isDeleted = 'N'
         and r.isDeleted = 'N'
@@ -417,6 +417,53 @@ exports.getStatsInfo = async function (challengeId, page, size) {
         return rows;
     } catch (err) {
         logger.error(`App - getStatsInfo DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.getGoalStatsInfo = async function (challengeId, page, size) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select r.userId,
+            v.userName,
+            v.profileImage,
+            v.levelColor,
+            distance,
+            ifnull(w.likeCount, 0) as likeCount
+        from Running r
+                join (select uc.userId, userName, x.levelColor, uc.isDeleted, challengeTeam, profileImage
+                    from User u
+                                join UserChallenge uc on u.userId = uc.userId
+                                join (select ul.userId, levelColor
+                                    from Level l
+                                            join UserLevel ul on l.level = ul.level) x on u.userId = x.userId
+                    where u.isDeleted = 'N'
+                        and uc.isDeleted = 'N'
+                        and userType = 'G'
+                        and uc.challengeId = ?
+                    group by uc.userId) v on r.userId = v.userId
+                left join (select r.runningId, count(rl.runningId) as likeCount
+                            from Running r
+                                    join RunningLike rl on r.runningId = rl.runningId
+                            where rl.status = 'Y' group by r.runningId) w on r.runningId = w.runningId
+        where r.challengeId = ?
+        and v.isDeleted = 'N'
+        and r.isDeleted = 'N'
+        and str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H') <= endTime
+        and endTime <= str_to_date(date_format(date_add(now(), interval +1 day), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H')
+        order by distance desc
+        limit ` + page + `, ` + size + `;
+        `;
+        const params = [challengeId, challengeId, page, size];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+
+        return rows;
+    } catch (err) {
+        logger.error(`App - getGoalStatsInfo DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
@@ -447,7 +494,7 @@ exports.getStatsTotalInfo = async function (challengeId, page, size) {
                 left join (select r.runningId, count(rl.runningId) as likeCount
                             from Running r
                                     join RunningLike rl on r.runningId = rl.runningId
-                            where rl.status = 'Y') w on r.runningId = w.runningId
+                            where rl.status = 'Y' group by r.runningId) w on r.runningId = w.runningId
         where r.challengeId = ?
         and v.isDeleted = 'N'
         and r.isDeleted = 'N'
@@ -463,6 +510,51 @@ exports.getStatsTotalInfo = async function (challengeId, page, size) {
         return rows;
     } catch (err) {
         logger.error(`App - getStatsTotalInfo DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.getGoalStatsTotalInfo = async function (challengeId, page, size) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select r.userId,
+            v.userName,
+            v.profileImage,
+            v.levelColor,
+            distance,
+            if(w.likeCount is null, 0, w.likeCount) as likeCount
+        from Running r
+                join (select uc.userId, userName, x.levelColor, uc.isDeleted, challengeTeam, profileImage
+                    from User u
+                                join UserChallenge uc on u.userId = uc.userId
+                                join (select ul.userId, levelColor
+                                    from Level l
+                                            join UserLevel ul on l.level = ul.level) x on u.userId = x.userId
+                    where u.isDeleted = 'N'
+                        and uc.isDeleted = 'N'
+                        and userType = 'G'
+                        and uc.challengeId = ?
+                    group by uc.userId) v on r.userId = v.userId
+                left join (select r.runningId, count(rl.runningId) as likeCount
+                            from Running r
+                                    join RunningLike rl on r.runningId = rl.runningId
+                            where rl.status = 'Y' group by r.runningId) w on r.runningId = w.runningId
+        where r.challengeId = ?
+        and v.isDeleted = 'N'
+        and r.isDeleted = 'N'
+        order by distance desc
+        limit ` + page + `, ` + size + `;
+        `;
+        const params = [challengeId, challengeId, page, size];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+
+        return rows;
+    } catch (err) {
+        logger.error(`App - getGoalStatsTotalInfo DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
@@ -498,7 +590,7 @@ exports.getCompetitionGraphToday = async function (challengeId) {
         and str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H') <= endTime
         and endTime <= str_to_date(date_format(date_add(now(), interval +1 day), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H');
         `;
-        const [firstRows] = await connection.query(query, params);
+        let [firstRows] = await connection.query(query, params);
 
         query = `
         select ifnull(challengeColor, '` + secondColor + `') as challengeColor,
@@ -514,7 +606,7 @@ exports.getCompetitionGraphToday = async function (challengeId) {
         and str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H') <= endTime
         and endTime <= str_to_date(date_format(date_add(now(), interval +1 day), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H');
         `;
-        const [secondRows] = await connection.query(query, params);
+        let [secondRows] = await connection.query(query, params);        
 
         /*
         query = `
@@ -591,55 +683,165 @@ exports.getCompetitionGraphTotal = async function (challengeId) {
     }
 }
 
-exports.getGoalGraphToday = async function (challengeId) {
+exports.getGoalGraphToday = async function (userId, challengeId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         let query = `
-        select firstColor, secondColor, firstTeamName, secondTeamName
-        from Challenge
-        where challengeId = ?
-        and isDeleted = 'N';
-        `;
-        let params = [challengeId];
-        let [rows] = await connection.query(query, params);
-        
-        const firstColor = rows[0].firstColor;
-        const secondColor = rows[0].secondColor;
-        const firstTeam = rows[0].firstTeamName;
-        const secondTeam = rows[0].secondTeamName;
-
-        query = `
-        select ifnull(challengeColor, '` + firstColor + `') as challengeColor,
-                ifnull(challengeTeam, '` + firstTeam + `') as challengeTeam,
-                ifnull(sum(distance), 0) as totalDistance
-        from Running r
-                join UserChallenge uc on r.userId = uc.userId
-        where r.challengeId = ?
-        and uc.challengeColor = '` + firstColor + `'
-        and challengeTeam is not null
+        select r.userId, v.userName, v.profileImage, v.levelColor, w.distance, ifnull(u.likeCount, 0) as likeCount
+from Running r
+            join (select uc.userId, userName, x.levelColor, uc.isDeleted, challengeTeam, profileImage
+                from User u
+                            join UserChallenge uc on u.userId = uc.userId
+                            join (select ul.userId, levelColor
+                                from Level l
+                                        join UserLevel ul on l.level = ul.level) x on u.userId = x.userId
+                where u.isDeleted = 'N'
+                    and uc.isDeleted = 'N'
+                    and userType = 'G'
+                    and uc.challengeId = ?) v on r.userId = v.userId
+            join (select r.runningId, count(likeId) as likeCount
+                from RunningLike rl
+                            left join Running r on rl.runningId = r.runningId
+                where rl.status = 'Y'
+                    and r.challengeId = ?
+                    and userId = ?
+                    and r.isDeleted = 'N'
+                    and str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H') <= endTime
+                    and endTime <=
+                        str_to_date(date_format(date_add(now(), interval +1 day), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H')
+                group by userId) u
+                on r.runningId = u.runningId
+            join (select ifnull(sum(distance), 0) as distance
+                from Running r
+                where challengeId = ?
+                    and userId = ?
+                    and isDeleted = 'N'
+                    and str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H') <= endTime
+                    and endTime <=
+                        str_to_date(date_format(date_add(now(), interval +1 day), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H')) w
+        where r.userId = ?
+        and challengeId = ?
         and r.isDeleted = 'N'
-        and uc.isDeleted = 'N';
+        group by r.userId;
         `;
+        let params = [challengeId, challengeId, userId, challengeId, userId, userId, challengeId];
         const [firstRows] = await connection.query(query, params);
 
         query = `
-        select ifnull(challengeColor, '` + secondColor + `') as challengeColor,
-                ifnull(challengeTeam, '` + secondTeam + `') as challengeTeam,
-                ifnull(sum(distance), 0) as totalDistance
-        from Running r
-                join UserChallenge uc on r.userId = uc.userId
+        select r.challengeId, challengeTeam, w.distance, ifnull(u.likeCount, 0) as likeCount
+from Running r
+            join UserChallenge uc on r.challengeId = uc.challengeId
+            join (select r.runningId, count(likeId) as likeCount
+                from RunningLike rl
+                            left join Running r on rl.runningId = r.runningId
+                where rl.status = 'Y'
+                    and r.challengeId = ?
+                    and str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H') <= endTime
+                    and endTime <=
+                        str_to_date(date_format(date_add(now(), interval +1 day), '%Y-%m-%d 00:00:00'),
+                                    '%Y-%m-%d %H')) u
+                on r.runningId = u.runningId
+            join (select ifnull(sum(distance), 0) as distance
+                from Running r
+                where challengeId = ?
+                    and isDeleted = 'N'
+                    and str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H') <= endTime
+                    and endTime <=
+                        str_to_date(date_format(date_add(now(), interval +1 day), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H')) w
         where r.challengeId = ?
-        and uc.challengeColor = '` + secondColor + `'
-        and challengeTeam is not null
         and r.isDeleted = 'N'
-        and uc.isDeleted = 'N';
-        `;
+        group by challengeTeam;
+        `
+        params = [challengeId, challengeId, challengeId];
         const [secondRows] = await connection.query(query, params);
         connection.release();
 
-        return [firstRows[0], secondRows[0]]
+        return [firstRows[0], secondRows[0]];
     } catch (err) {
-        logger.error(`App - getCompetitionGraphToday DB Connection error\n: ${err.message}`);
+        logger.error(`App - getGoalGraphToday DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+
+exports.getGoalGraphTotal = async function (userId, challengeId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        let query = `
+        select r.userId,
+            v.userName,
+            round((w.distance / c.distance) * 100, 1) as ratio,
+            round(w.distance, 1)                      as distance,
+            ifnull(u.likeCount, 0)                    as likeCount
+        from Running r
+                join Challenge c on r.challengeId = c.challengeId
+                join (select uc.userId, userName, uc.isDeleted, challengeTeam, profileImage
+                    from User u
+                                join UserChallenge uc on u.userId = uc.userId
+                    where u.isDeleted = 'N'
+                        and uc.isDeleted = 'N'
+                        and userType = 'G'
+                        and uc.challengeId = ?) v on r.userId = v.userId
+                join (select r.runningId, count(likeId) as likeCount
+                    from RunningLike rl
+                                left join Running r on rl.runningId = r.runningId
+                    where rl.status = 'Y'
+                        and r.challengeId = ?
+                        and userId = ?
+                        and r.isDeleted = 'N') u
+                    on r.runningId = u.runningId
+                join (select ifnull(sum(distance), 0) as distance
+                    from Running r
+                    where challengeId = ?
+                        and userId = ?
+                        and isDeleted = 'N') w
+        where r.userId = ?
+        and r.challengeId = ?
+        and r.isDeleted = 'N'
+        and c.isDeleted = 'N'
+        group by r.userId;
+        `;
+        let params = [challengeId, challengeId, userId, challengeId, userId, userId, challengeId];
+        const [firstRows] = await connection.query(query, params);
+
+        query = `
+        select c.challengeId,
+            challengeName,
+            round((w.distance / c.distance) * 100, 1) as ratio,
+            round(w.distance, 1)                      as distance,
+            ifnull(u.likeCount, 0)                    as likeCount
+        from Running r
+                join Challenge c on r.challengeId = c.challengeId
+                join (select uc.userId, userName, uc.isDeleted, challengeTeam, profileImage
+                    from User u
+                                join UserChallenge uc on u.userId = uc.userId
+                    where u.isDeleted = 'N'
+                        and uc.isDeleted = 'N'
+                        and userType = 'G'
+                        and uc.challengeId = ?) v on r.userId = v.userId
+                join (select r.runningId, count(likeId) as likeCount
+                    from RunningLike rl
+                                left join Running r on rl.runningId = r.runningId
+                    where rl.status = 'Y'
+                        and r.challengeId = ?
+                        and r.isDeleted = 'N') u
+                    on r.runningId = u.runningId
+                join (select ifnull(sum(distance), 0) as distance
+                    from Running r
+                    where challengeId = ?
+                        and isDeleted = 'N') w
+        where r.challengeId = ?
+        and r.isDeleted = 'N'
+        and c.isDeleted = 'N'
+        group by r.userId;
+        `
+        params = [challengeId, challengeId, challengeId, challengeId];
+        const [secondRows] = await connection.query(query, params);
+
+        connection.release();
+        return [firstRows[0], secondRows[0]];
+    } catch (err) {
+        logger.error(`App - getGoalGraphTotal DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
