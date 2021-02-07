@@ -252,6 +252,7 @@ exports.challengeGraph = async function (req, res) {
             let graphRows;
             if (type === 'B') {
                 graphRows = await challengeDao.getCompetitionGraphToday(challengeId);
+                if (graphRows[0] === undefined || graphRows[1] === undefined) return res.json(response.successTrue(1050, "아직 챌린지 통계가 없습니다."));
                 const result = {
                     firstTeam: graphRows[0],
                     secondTeam: graphRows[1]
@@ -259,6 +260,7 @@ exports.challengeGraph = async function (req, res) {
                 return res.json(response.successTrue(1200, "'오늘' 경쟁전 챌린지 그래프 조회에 성공하였습니다.", result));
             } else {
                 graphRows = await challengeDao.getGoalGraphToday(userId, challengeId);
+                if (graphRows[0] === undefined || graphRows[1] === undefined) return res.json(response.successTrue(1050, "아직 챌린지 통계가 없습니다."));
                 const result = {
                     user: graphRows[0],
                     team: graphRows[1]
@@ -270,6 +272,7 @@ exports.challengeGraph = async function (req, res) {
             let graphRows;
             if (type === 'B') {
                 graphRows = await challengeDao.getCompetitionGraphTotal(challengeId);
+                if (graphRows[0] === undefined || graphRows[1] === undefined) return res.json(response.successTrue(1050, "아직 챌린지 통계가 없습니다."));
                 const result = {
                     firstTeam: graphRows[0],
                     secondTeam: graphRows[1]
@@ -277,6 +280,7 @@ exports.challengeGraph = async function (req, res) {
                 return res.json(response.successTrue(1202, "'누적' 경쟁전 챌린지 그래프 조회에 성공하였습니다.", result));
             } else {
                 graphRows = await challengeDao.getGoalGraphTotal(userId, challengeId);
+                if (graphRows[0] === undefined || graphRows[1] === undefined) return res.json(response.successTrue(1050, "아직 챌린지 통계가 없습니다."));
                 const result = {
                     user: graphRows[0],
                     challenge: graphRows[1]

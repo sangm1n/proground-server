@@ -606,20 +606,22 @@ exports.getCompetitionGraphToday = async function (challengeId) {
         and str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H') <= endTime
         and endTime <= str_to_date(date_format(date_add(now(), interval +1 day), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H');
         `;
-        let [secondRows] = await connection.query(query, params);        
-
-        /*
-        query = `
-        select round((distance / (timestampdiff(day, startDate, endDate) + 1))) as maximum
-        from Challenge
-        where challengeId = ?
-        and isDeleted = 'N';
-        `
-        let params = [challengeId];
-        let [rows] = await connection.query(query, params);
+        let [secondRows] = await connection.query(query, params);    
         
-        const todayMax = rows[0].maximum;
-        */
+        query = `
+        select distance, personnel, (endDate-startDate+1) as period from Challenge where challengeId = ?;
+        `
+        let [thirdRows] = await connection.query(query, params);
+
+        const maximum = parseFloat((thirdRows[0].distance / thirdRows[0].period)).toFixed(2);
+        const firstDist = parseFloat(firstRows[0].totalDistance).toFixed(2);
+        const secondDist = parseFloat(secondRows[0].totalDistance).toFixed(2);
+
+        const firstRatio = ((firstDist / maximum) * 100).toFixed(2);
+        const secondRatio = ((secondDist / maximum) * 100).toFixed(2);
+
+        firstRows[0].ratio = firstRatio;
+        secondRows[0].ratio = secondRatio;
 
         connection.release();
 
@@ -674,6 +676,22 @@ exports.getCompetitionGraphTotal = async function (challengeId) {
         and uc.isDeleted = 'N';
         `;
         const [secondRows] = await connection.query(query, params);
+
+        query = `
+        select distance, personnel, (endDate-startDate+1) as period from Challenge where challengeId = ?;
+        `
+        let [thirdRows] = await connection.query(query, params);
+
+        const maximum = parseFloat(thirdRows[0].distance).toFixed(2);
+        const firstDist = parseFloat(firstRows[0].totalDistance).toFixed(2);
+        const secondDist = parseFloat(secondRows[0].totalDistance).toFixed(2);
+
+        const firstRatio = ((firstDist / maximum) * 100).toFixed(2);
+        const secondRatio = ((secondDist / maximum) * 100).toFixed(2);
+
+        firstRows[0].ratio = firstRatio;
+        secondRows[0].ratio = secondRatio;
+
         connection.release();
 
         return [firstRows[0], secondRows[0]]
@@ -687,8 +705,13 @@ exports.getGoalGraphToday = async function (userId, challengeId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         let query = `
-        select r.userId, v.userName, v.profileImage, v.levelColor, w.distance, ifnull(u.likeCount, 0) as likeCount
-from Running r
+        select r.userId, 
+            v.userName, 
+            v.profileImage, 
+            v.levelColor, 
+            ifnull(w.distance, 0.00) as distance, 
+            cast(ifnull(sum(u.likeCount), 0) as unsigned) as likeCount
+        from Running r
             join (select uc.userId, userName, x.levelColor, uc.isDeleted, challengeTeam, profileImage
                 from User u
                             join UserChallenge uc on u.userId = uc.userId
@@ -699,17 +722,16 @@ from Running r
                     and uc.isDeleted = 'N'
                     and userType = 'G'
                     and uc.challengeId = ?) v on r.userId = v.userId
-            join (select r.runningId, count(likeId) as likeCount
+            left join (select r.runningId, count(likeId) as likeCount
                 from RunningLike rl
-                            left join Running r on rl.runningId = r.runningId
-                where rl.status = 'Y'
-                    and r.challengeId = ?
+                            join Running r on rl.runningId = r.runningId
+                where challengeId = ?
                     and userId = ?
+                    and rl.status = 'Y'
                     and r.isDeleted = 'N'
                     and str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H') <= endTime
                     and endTime <=
-                        str_to_date(date_format(date_add(now(), interval +1 day), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H')
-                group by userId) u
+                        str_to_date(date_format(date_add(now(), interval +1 day), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H')) u
                 on r.runningId = u.runningId
             join (select ifnull(sum(distance), 0) as distance
                 from Running r
@@ -728,18 +750,18 @@ from Running r
         const [firstRows] = await connection.query(query, params);
 
         query = `
-        select r.challengeId, challengeTeam, w.distance, ifnull(u.likeCount, 0) as likeCount
-from Running r
+        select r.challengeId, challengeTeam, ifnull(w.distance, 0.00) as distance, cast(ifnull(sum(u.likeCount), 0) as unsigned) as likeCount
+        from Running r
             join UserChallenge uc on r.challengeId = uc.challengeId
-            join (select r.runningId, count(likeId) as likeCount
+            left join (select r.runningId, count(likeId) as likeCount
                 from RunningLike rl
-                            left join Running r on rl.runningId = r.runningId
-                where rl.status = 'Y'
-                    and r.challengeId = ?
+                            join Running r on rl.runningId = r.runningId
+                where challengeId = ?
+                    and rl.status = 'Y'
+                    and r.isDeleted = 'N'
                     and str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H') <= endTime
                     and endTime <=
-                        str_to_date(date_format(date_add(now(), interval +1 day), '%Y-%m-%d 00:00:00'),
-                                    '%Y-%m-%d %H')) u
+                        str_to_date(date_format(date_add(now(), interval +1 day), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H')) u
                 on r.runningId = u.runningId
             join (select ifnull(sum(distance), 0) as distance
                 from Running r
@@ -754,6 +776,24 @@ from Running r
         `
         params = [challengeId, challengeId, challengeId];
         const [secondRows] = await connection.query(query, params);
+
+        query = `
+        select distance, personnel, (endDate-startDate+1) as period from Challenge where challengeId = ?;
+        `
+        let [thirdRows] = await connection.query(query, params);
+
+        const userMax = parseFloat((thirdRows[0].distance / thirdRows[0].period)).toFixed(2);
+        const teamMax = parseFloat((thirdRows[0].distance / thirdRows[0].period * thirdRows[0].personnel)).toFixed(2);
+
+        const firstDist = parseFloat(firstRows[0].distance).toFixed(2);
+        const secondDist = parseFloat(secondRows[0].distance).toFixed(2);
+
+        const firstRatio = ((firstDist / userMax) * 100).toFixed(2);
+        const secondRatio = ((secondDist / teamMax) * 100).toFixed(2);
+
+        firstRows[0].ratio = firstRatio;
+        secondRows[0].ratio = secondRatio;
+
         connection.release();
 
         return [firstRows[0], secondRows[0]];
@@ -770,9 +810,9 @@ exports.getGoalGraphTotal = async function (userId, challengeId) {
         let query = `
         select r.userId,
             v.userName,
-            round((w.distance / c.distance) * 100, 1) as ratio,
-            round(w.distance, 1)                      as distance,
-            ifnull(u.likeCount, 0)                    as likeCount
+            ifnull(round((w.distance / c.distance) * 100, 1), 0.00) as ratio,
+            ifnull(round(w.distance, 1), 0.00)                      as distance,
+            cast(ifnull(sum(u.likeCount), 0) as unsigned) as likeCount
         from Running r
                 join Challenge c on r.challengeId = c.challengeId
                 join (select uc.userId, userName, uc.isDeleted, challengeTeam, profileImage
@@ -782,12 +822,12 @@ exports.getGoalGraphTotal = async function (userId, challengeId) {
                         and uc.isDeleted = 'N'
                         and userType = 'G'
                         and uc.challengeId = ?) v on r.userId = v.userId
-                join (select r.runningId, count(likeId) as likeCount
+                left join (select r.runningId, count(likeId) as likeCount
                     from RunningLike rl
-                                left join Running r on rl.runningId = r.runningId
-                    where rl.status = 'Y'
-                        and r.challengeId = ?
+                                join Running r on rl.runningId = r.runningId
+                    where challengeId = ?
                         and userId = ?
+                        and rl.status = 'Y'
                         and r.isDeleted = 'N') u
                     on r.runningId = u.runningId
                 join (select ifnull(sum(distance), 0) as distance
@@ -807,9 +847,9 @@ exports.getGoalGraphTotal = async function (userId, challengeId) {
         query = `
         select c.challengeId,
             challengeName,
-            round((w.distance / c.distance) * 100, 1) as ratio,
-            round(w.distance, 1)                      as distance,
-            ifnull(u.likeCount, 0)                    as likeCount
+            ifnull(round((w.distance / c.distance) * 100, 1), 0.00) as ratio,
+            ifnull(round(w.distance, 1), 0.00)                      as distance,
+            cast(ifnull(sum(u.likeCount), 0) as unsigned) as likeCount
         from Running r
                 join Challenge c on r.challengeId = c.challengeId
                 join (select uc.userId, userName, uc.isDeleted, challengeTeam, profileImage
@@ -819,11 +859,11 @@ exports.getGoalGraphTotal = async function (userId, challengeId) {
                         and uc.isDeleted = 'N'
                         and userType = 'G'
                         and uc.challengeId = ?) v on r.userId = v.userId
-                join (select r.runningId, count(likeId) as likeCount
+                left join (select r.runningId, count(likeId) as likeCount
                     from RunningLike rl
-                                left join Running r on rl.runningId = r.runningId
-                    where rl.status = 'Y'
-                        and r.challengeId = ?
+                                join Running r on rl.runningId = r.runningId
+                    where challengeId = ?
+                        and rl.status = 'Y'
                         and r.isDeleted = 'N') u
                     on r.runningId = u.runningId
                 join (select ifnull(sum(distance), 0) as distance
@@ -837,6 +877,23 @@ exports.getGoalGraphTotal = async function (userId, challengeId) {
         `
         params = [challengeId, challengeId, challengeId, challengeId];
         const [secondRows] = await connection.query(query, params);
+
+        query = `
+        select distance, personnel, (endDate-startDate+1) as period from Challenge where challengeId = ?;
+        `
+        let [thirdRows] = await connection.query(query, params);
+
+        const userMax = parseFloat(thirdRows[0].distance).toFixed(2);
+        const teamMax = parseFloat(thirdRows[0].distance * thirdRows[0].personnel).toFixed(2);
+
+        const firstDist = parseFloat(firstRows[0].distance).toFixed(2);
+        const secondDist = parseFloat(secondRows[0].distance).toFixed(2);
+
+        const firstRatio = ((firstDist / userMax) * 100).toFixed(2);
+        const secondRatio = ((secondDist / teamMax) * 100).toFixed(2);
+
+        firstRows[0].ratio = firstRatio;
+        secondRows[0].ratio = secondRatio;
 
         connection.release();
         return [firstRows[0], secondRows[0]];
