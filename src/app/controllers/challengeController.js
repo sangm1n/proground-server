@@ -2,6 +2,9 @@ const {pool} = require('../../../config/database');
 const {logger} = require('../../../config/winston');
 const response = require('../../utils/response');
 
+const jwt = require('jsonwebtoken');
+const secret_config = require('../../../config/secret');
+
 const challengeDao = require('../dao/challengeDao');
 let maxChallenge = 2;
 
@@ -63,10 +66,12 @@ exports.myChallenge = async function (req, res) {
  * 개별 챌린지 조회 API
  */
 exports.challengeInfo = async function (req, res) {
+    let token = req.headers['x-access-token'] || req.query.token;
     const {
         challengeId
     } = req.params;
-    
+
+    if (token) token = jwt.verify(token, secret_config.jwtsecret);
     if (!challengeId) return res.json(response.successFalse(2100, "챌린지 번호를 입력해주세요."));
 
     try {
@@ -80,10 +85,10 @@ exports.challengeInfo = async function (req, res) {
 
         // status - A: 참가 가능 / B: 참가 불가능 / C: 참가중
         let status;
-        if (!req.verifiedToken) {
+        if (token === undefined) {
             status = 'B';
         } else {
-            const userId = req.verifiedToken.userId;
+            const userId = token.userId;
 
             const checkRegRows = await challengeDao.checkRegisterChallenge(userId, challengeId);
             const checkLevelRows = await challengeDao.checkChallengeLevel(userId, challengeId);
