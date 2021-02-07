@@ -846,7 +846,7 @@ exports.getGoalGraphTotal = async function (userId, challengeId) {
 
         query = `
         select c.challengeId,
-            challengeName,
+            challengeTeam,
             ifnull(round((w.distance / c.distance) * 100, 1), 0.00) as ratio,
             ifnull(round(w.distance, 1), 0.00)                      as distance,
             cast(ifnull(sum(u.likeCount), 0) as unsigned) as likeCount
