@@ -5,6 +5,9 @@ const response = require('../../utils/response');
 const chattingDao = require('../dao/chattingDao');
 const challengeDao = require('../dao/challengeDao');
 
+const s3 = require('../../utils/awsS3');
+const multer = require('multer');
+
 /***
  * update : 2021-02-10
  * 해당 챌린지 채팅 조회 API
@@ -54,9 +57,7 @@ exports.allChatting = async function (req, res) {
 exports.makeChatting = async function (req, res) {
     const userId = req.verifiedToken.userId;
     const {challengeId} = req.params;
-    const {
-        message, image
-    } = req.body;
+    const message = req.body.message;
     
     if (!challengeId) return res.json(response.successFalse(2100, "챌린지 번호를 입력해주세요."));
     if (!message) return res.json(response.successFalse(2200, "채팅 메시지를 입력해주세요."));
@@ -68,9 +69,10 @@ exports.makeChatting = async function (req, res) {
         if (challengeRows === 0) return res.json(response.successFalse(3100, "존재하지 않는 챌린지입니다."));
         if (checkRows === 0) return res.json(response.successFalse(3101, "현재 참가중인 챌린지가 아닙니다."));
 
-        await chattingDao.postChatting(challengeId, userId, message, image);
+        if (req.files.length < 1) await chattingDao.postChatting(challengeId, userId, message);
+        else await chattingDao.postChatting(challengeId, userId, message, req.files[0].location);
 
-        return res.json(response.successTrue(1040, "채팅 메시지 입력에 성공하였습니다."));
+        return res.json(response.successTrue(1310, "해당 챌린지 채팅 생성에 성공하였습니다."));
     } catch (err) {
         logger.error(`App - makeChatting Query error\n: ${err.message}`);
         return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));

@@ -213,12 +213,35 @@ exports.checkChallengeChat = async function (userId, challengeId) {
 exports.postChatting = async function (challengeId, userId, message, image) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
-        const query = `
-        insert into Chatting (challengeId, userId, message, image)
-        values (?, ?, ?, ?);
-        `;
-        const params = [challengeId, userId, message, image];
-        const [rows] = await connection.query(query, params);
+        let query, params;;
+        if (!image) {
+            query = `
+            insert into Chatting (challengeId, userId, message)
+            values (?, ?, ?);
+            `;
+            params = [challengeId, userId, message];
+            await connection.query(query, params);
+        } else {
+            query = `
+            insert into Chatting (challengeId, userId, message, image)
+            values (?, ?, ?, ?);
+            `;
+            params = [challengeId, userId, message, image];
+            await connection.query(query, params);
+        }
+
+        query = `
+        select chattingId from Chatting order by createdAt desc limit 1;
+        `
+        const [rows] = await connection.query(query);
+        const chattingId = rows[0].chattingId;
+        
+        query = `
+        update Chatting set parentChattingId = ? where chattingId = ?;
+        `
+        params = [chattingId, chattingId];
+        await connection.query(query, params);
+
         connection.release();
     } catch (err) {
         logger.error(`App - postChatting DB Connection error\n: ${err.message}`);
