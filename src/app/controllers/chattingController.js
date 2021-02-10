@@ -43,7 +43,10 @@ exports.allChatting = async function (req, res) {
         const chatting = [...first, ...second, ...third];
 
         chatting.sort(function (a, b) { return a.compareTime - b.compareTime });
-        return res.json(response.successTrue(1300, "해당 챌린지 채팅 조회에 성공하였습니다.", chatting.slice(page, size)));
+        const resultRows = chatting.slice(page, size);
+
+        if (resultRows.length === 0) return res.json(response.successTrue(1350, "아직 채팅 내용이 없습니다."));
+        return res.json(response.successTrue(1300, "해당 챌린지 채팅 조회에 성공하였습니다.", resultRows));
     } catch (err) {
         logger.error(`App - allChatting Query error\n: ${err.message}`);
         return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
