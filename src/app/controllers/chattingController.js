@@ -6,14 +6,14 @@ const chattingDao = require('../dao/chattingDao');
 const challengeDao = require('../dao/challengeDao');
 
 /***
- * update : 2021-01-31
+ * update : 2021-02-10
  * 해당 챌린지 채팅 조회 API
  */
 exports.allChatting = async function (req, res) {
     const userId = req.verifiedToken.userId;
     const {challengeId} = req.params;
     let {
-        paze, size
+        page, size
     } = req.query;
 
     if (!page) return res.json(response.successFalse(2060, "페이지를 입력해주세요."));
@@ -23,16 +23,24 @@ exports.allChatting = async function (req, res) {
 
     try {
         page = size * (page - 1);
+        size = Number(page) + Number(size);
 
         const challengeRows = await challengeDao.checkChallenge(challengeId);
-        const checkRows = await chattingDao.checkChallengeChat(userId, challengeId);
+        const checkRows = await challengeDao.checkRegisterChallenge(userId, challengeId);
 
         if (challengeRows === 0) return res.json(response.successFalse(3100, "존재하지 않는 챌린지입니다."));
         if (checkRows === 0) return res.json(response.successFalse(3101, "현재 참가중인 챌린지가 아닙니다."));
 
-        
+        const chattingRows = await chattingDao.getChatting(userId, challengeId);
 
-        return res.json(response.successTrue(1050, "채팅 조회에 성공하였습니다."));
+        const first = chattingRows[0];
+        const second = chattingRows[1];
+        const third = chattingRows[2];
+
+        const chatting = [...first, ...second, ...third];
+
+        chatting.sort(function (a, b) { return a.compareTime - b.compareTime });
+        return res.json(response.successTrue(1300, "해당 챌린지 채팅 조회에 성공하였습니다.", chatting.slice(page, size)));
     } catch (err) {
         logger.error(`App - allChatting Query error\n: ${err.message}`);
         return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
@@ -40,7 +48,7 @@ exports.allChatting = async function (req, res) {
 }
 
 /***
- * update : 2021-01-31
+ * update : 2021-02-10
  * 해당 챌린지 채팅 생성 API
  */
 exports.makeChatting = async function (req, res) {
