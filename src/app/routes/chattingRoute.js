@@ -4,5 +4,5 @@ module.exports = function(app){
     const s3 = require('../../utils/awsS3');
 
     app.route('/challenges/:challengeId/chats').get(jwtMiddleware, chat.allChatting);
-    app.route('/challenges/:challengeId/chat').post(jwtMiddleware, s3.upload('/chatting').array('img', 'message'), chat.makeChatting);
+    app.route('/challenges/:challengeId/chat').post(jwtMiddleware, s3.upload('/chatting').array('img', 'message', 'parentChattingId'), chat.makeChatting);
 };

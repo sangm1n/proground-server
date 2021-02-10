@@ -210,7 +210,7 @@ exports.checkChallengeChat = async function (userId, challengeId) {
     }
 }
 
-exports.postChatting = async function (challengeId, userId, message, image) {
+exports.postChatting = async function (challengeId, userId, message, image, parentChattingId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         let query, params;;
@@ -229,18 +229,32 @@ exports.postChatting = async function (challengeId, userId, message, image) {
             params = [challengeId, userId, message, image];
             await connection.query(query, params);
         }
-
-        query = `
-        select chattingId from Chatting order by createdAt desc limit 1;
-        `
-        const [rows] = await connection.query(query);
-        const chattingId = rows[0].chattingId;
         
-        query = `
-        update Chatting set parentChattingId = ? where chattingId = ?;
-        `
-        params = [chattingId, chattingId];
-        await connection.query(query, params);
+        if (parentChattingId === undefined) {
+            query = `
+            select chattingId from Chatting order by createdAt desc limit 1;
+            `
+            const [rows] = await connection.query(query);
+            const chattingId = rows[0].chattingId;
+            
+            query = `
+            update Chatting set parentChattingId = ? where chattingId = ?;
+            `
+            params = [chattingId, chattingId];
+            await connection.query(query, params);
+        } else {
+            query = `
+            select chattingId from Chatting order by createdAt desc limit 1;
+            `
+            const [rows] = await connection.query(query);
+            const chattingId = rows[0].chattingId;
+            
+            query = `
+            update Chatting set parentChattingId = ? where chattingId = ?;
+            `
+            params = [Number(parentChattingId), chattingId];
+            await connection.query(query, params);
+        }
 
         connection.release();
     } catch (err) {
