@@ -109,3 +109,31 @@ exports.eachChatting = async function (req, res) {
         return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
     }
 }
+
+/***
+ * update : 2021-02-11
+ * 채팅 답글 생성 API
+ */
+exports.makeComment = async function (req, res) {
+    const userId = req.verifiedToken.userId;
+    const {chattingId} = req.params;
+    const message = req.body.message;
+    
+    if (!chattingId) return res.json(response.successFalse(2100, "채팅 번호를 입력해주세요."));
+    if (!message) return res.json(response.successFalse(2200, "채팅 메시지를 입력해주세요."));
+
+    try {
+        const checkRows = await chattingDao.checkChatting(chattingId);
+        if (checkRows === 0) return res.json(response.successFalse(3100, "존재하지 않는 채팅입니다."));
+
+        const challengeId = await chattingDao.getChallengeId(chattingId);
+
+        if (req.files.length < 1) await chattingDao.postChatting(challengeId, userId, message, undefined, chattingId);
+        else await chattingDao.postChatting(challengeId, userId, message, req.files[0].location, chattingId);
+
+        return res.json(response.successTrue(1320, "채팅 답글 생성에 성공하였습니다."));
+    } catch (err) {
+        logger.error(`App - makeChatting Query error\n: ${err.message}`);
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+    }
+}

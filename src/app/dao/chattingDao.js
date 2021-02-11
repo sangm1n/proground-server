@@ -210,7 +210,7 @@ exports.checkChallengeChat = async function (userId, challengeId) {
     }
 }
 
-exports.postChatting = async function (challengeId, userId, message, image) {
+exports.postChatting = async function (challengeId, userId, message, image, parentChattingId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         let query, params;;
@@ -230,17 +230,31 @@ exports.postChatting = async function (challengeId, userId, message, image) {
             await connection.query(query, params);
         }
         
-        query = `
-        select chattingId from Chatting order by createdAt desc limit 1;
-        `
-        const [rows] = await connection.query(query);
-        const chattingId = rows[0].chattingId;
-        
-        query = `
-        update Chatting set parentChattingId = ? where chattingId = ?;
-        `
-        params = [chattingId, chattingId];
-        await connection.query(query, params);
+        if (parentChattingId === undefined) {
+            query = `
+            select chattingId from Chatting order by createdAt desc limit 1;
+            `
+            const [rows] = await connection.query(query);
+            const chattingId = rows[0].chattingId;
+            
+            query = `
+            update Chatting set parentChattingId = ? where chattingId = ?;
+            `
+            params = [chattingId, chattingId];
+            await connection.query(query, params);
+        } else {
+            query = `
+            select chattingId from Chatting order by createdAt desc limit 1;
+            `
+            const [rows] = await connection.query(query);
+            const chattingId = rows[0].chattingId;
+            
+            query = `
+            update Chatting set parentChattingId = ? where chattingId = ?;
+            `
+            params = [parentChattingId, chattingId];
+            await connection.query(query, params);
+        }
 
         connection.release();
     } catch (err) {
@@ -267,6 +281,7 @@ exports.getChallengeId = async function (chattingId) {
     }
 }
 
+// 개별 채팅 조회
 exports.getEachChatting = async function (chattingId, challengeType) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
@@ -344,3 +359,22 @@ exports.getEachChatting = async function (chattingId, challengeType) {
     }
 }
 
+// 답글 생성
+exports.checkChatting = async function (chattingId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select exists(select chattingId from Chatting where chattingId = ? and isDeleted = 'N') as exist;
+        `;
+        const params = [chattingId];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+
+        return rows[0]['exist'];
+    } catch (err) {
+        logger.error(`App - checkChatting DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
