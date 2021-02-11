@@ -5,4 +5,5 @@ module.exports = function(app){
 
     app.route('/challenges/:challengeId/chats').get(jwtMiddleware, chat.allChatting);
     app.route('/challenges/:challengeId/chat').post(jwtMiddleware, s3.upload('/chatting').array('img', 'message', 'parentChattingId'), chat.makeChatting);
+    app.route('/chats/:chattingId').get(jwtMiddleware, chat.eachChatting);
 };

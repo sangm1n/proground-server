@@ -210,7 +210,7 @@ exports.checkChallengeChat = async function (userId, challengeId) {
     }
 }
 
-exports.postChatting = async function (challengeId, userId, message, image, parentChattingId) {
+exports.postChatting = async function (challengeId, userId, message, image) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         let query, params;;
@@ -230,31 +230,17 @@ exports.postChatting = async function (challengeId, userId, message, image, pare
             await connection.query(query, params);
         }
         
-        if (parentChattingId === undefined) {
-            query = `
-            select chattingId from Chatting order by createdAt desc limit 1;
-            `
-            const [rows] = await connection.query(query);
-            const chattingId = rows[0].chattingId;
-            
-            query = `
-            update Chatting set parentChattingId = ? where chattingId = ?;
-            `
-            params = [chattingId, chattingId];
-            await connection.query(query, params);
-        } else {
-            query = `
-            select chattingId from Chatting order by createdAt desc limit 1;
-            `
-            const [rows] = await connection.query(query);
-            const chattingId = rows[0].chattingId;
-            
-            query = `
-            update Chatting set parentChattingId = ? where chattingId = ?;
-            `
-            params = [Number(parentChattingId), chattingId];
-            await connection.query(query, params);
-        }
+        query = `
+        select chattingId from Chatting order by createdAt desc limit 1;
+        `
+        const [rows] = await connection.query(query);
+        const chattingId = rows[0].chattingId;
+        
+        query = `
+        update Chatting set parentChattingId = ? where chattingId = ?;
+        `
+        params = [chattingId, chattingId];
+        await connection.query(query, params);
 
         connection.release();
     } catch (err) {
@@ -263,4 +249,98 @@ exports.postChatting = async function (challengeId, userId, message, image, pare
     }
 }
 
+exports.getChallengeId = async function (chattingId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select challengeId from Chatting where chattingId = ?;
+        `;
+        const params = [chattingId];
+        const [rows] = await connection.query(query, params);
+
+        connection.release();
+
+        return rows[0]['challengeId'];
+    } catch (err) {
+        logger.error(`App - getChallengeId DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.getEachChatting = async function (chattingId, challengeType) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        let query, params;
+
+        if (challengeType === 'A') {
+            query = `
+            select c.chattingId,
+                u.userId,
+                u.userName,
+                u.profileImage,
+                l.levelColor,
+                c.message,
+                c.image,
+                case
+                    when c.createdAt < date_format(now(), '%Y-%m-%d 00:00:00')
+                        then date_format(c.createdAt, '%m-%d %H:%i')
+                    when c.createdAt >= date_format(now(), '%Y-%m-%d 00:00:00')
+                        then date_format(c.createdAt, '%H:%i')
+                    end as createdAt
+            from User u
+                    join UserLevel ul on u.userId = ul.userId
+                    join Level l on ul.level = l.level
+                    join Chatting c on u.userId = c.userId
+                    join (select c.userId, c.challengeId, chattingId, challengeTeam, challengeColor
+                        from UserChallenge uc
+                                    join Chatting c on uc.challengeId = c.challengeId
+                        where challengeTeam is not null
+                        group by c.chattingId) v on c.chattingId = v.chattingId
+            where parentChattingId = ?
+            and u.isDeleted = 'N'
+            and c.isDeleted = 'N'
+            order by c.createdAt;
+            `;
+        } else {
+            query = `
+            select c.chattingId,
+                u.userId,
+                u.userName,
+                u.profileImage,
+                l.levelColor,
+                v.challengeTeam,
+                v.challengeColor,
+                c.message,
+                c.image,
+                case
+                    when c.createdAt < date_format(now(), '%Y-%m-%d 00:00:00')
+                        then date_format(c.createdAt, '%m-%d %H:%i')
+                    when c.createdAt >= date_format(now(), '%Y-%m-%d 00:00:00')
+                        then date_format(c.createdAt, '%H:%i')
+                    end as createdAt
+            from User u
+                    join UserLevel ul on u.userId = ul.userId
+                    join Level l on ul.level = l.level
+                    join Chatting c on u.userId = c.userId
+                    join (select c.userId, c.challengeId, chattingId, challengeTeam, challengeColor
+                        from UserChallenge uc
+                                    join Chatting c on uc.challengeId = c.challengeId
+                        where challengeTeam is not null
+                        group by c.chattingId) v on c.chattingId = v.chattingId
+            where parentChattingId = ?
+            and u.isDeleted = 'N'
+            and c.isDeleted = 'N'
+            order by c.createdAt;
+            `;
+        }
+        params = [chattingId];
+        const [rows] = await connection.query(query, params);
+        connection.release();
+
+        return rows;
+    } catch (err) {
+        logger.error(`App - getEachChatting DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
 
