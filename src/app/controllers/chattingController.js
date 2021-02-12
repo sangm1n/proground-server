@@ -133,7 +133,29 @@ exports.makeComment = async function (req, res) {
 
         return res.json(response.successTrue(1320, "채팅 답글 생성에 성공하였습니다."));
     } catch (err) {
-        logger.error(`App - makeChatting Query error\n: ${err.message}`);
+        logger.error(`App - makeComment Query error\n: ${err.message}`);
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+    }
+}
+
+/***
+ * update : 2021-02-12
+ * 채팅 이미지 조회 API
+ */
+exports.chattingImage = async function (req, res) {
+    const userId = req.verifiedToken.userId;
+    const {chattingId} = req.params;
+    
+    if (!chattingId) return res.json(response.successFalse(2100, "채팅 번호를 입력해주세요."));
+
+    try {
+        const imageRows = await chattingDao.getChattingImage(chattingId);
+
+        if (imageRows.image === null) return res.json(response.successTrue(3300, "채팅 이미지가 존재하지 않습니다."));
+
+        return res.json(response.successTrue(1340, "채팅 이미지 조회에 성공하였습니다.", imageRows));
+    } catch (err) {
+        logger.error(`App - chattingImage Query error\n: ${err.message}`);
         return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
     }
 }
