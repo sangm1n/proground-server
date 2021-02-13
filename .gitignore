@@ -6,3 +6,4 @@ log/*
 nohup.out
 HELP.md
 config/awsconfig.json
+config/secret.js
