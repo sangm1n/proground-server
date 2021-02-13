@@ -60,10 +60,11 @@ exports.allChatting = async function (req, res) {
 exports.makeChatting = async function (req, res) {
     const userId = req.verifiedToken.userId;
     const {challengeId} = req.params;
-    const message = req.body.message;
-    
+    let message = req.body.message;
+
+    if (message === undefined & req.files === undefined) return res.json(response.successFalse(2200, "채팅을 입력해주세요.")); 
+    if (message === undefined) message = null;    
     if (!challengeId) return res.json(response.successFalse(2100, "챌린지 번호를 입력해주세요."));
-    if (!message) return res.json(response.successFalse(2200, "채팅 메시지를 입력해주세요."));
 
     try {
         const challengeRows = await challengeDao.checkChallenge(challengeId);
@@ -117,10 +118,11 @@ exports.eachChatting = async function (req, res) {
 exports.makeComment = async function (req, res) {
     const userId = req.verifiedToken.userId;
     const {chattingId} = req.params;
-    const message = req.body.message;
-    
+    let message = req.body.message;
+
+    if (message === undefined & req.files === undefined) return res.json(response.successFalse(2200, "채팅을 입력해주세요.")); 
+    if (message === undefined) message = null;    
     if (!chattingId) return res.json(response.successFalse(2100, "채팅 번호를 입력해주세요."));
-    if (!message) return res.json(response.successFalse(2200, "채팅 메시지를 입력해주세요."));
 
     try {
         const checkRows = await chattingDao.checkChatting(chattingId);
