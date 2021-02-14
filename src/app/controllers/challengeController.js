@@ -138,7 +138,7 @@ exports.registerChallenge = async function (req, res) {
         if (checkRegRows === 1) return res.json(response.successFalse(3101, "이미 참가한 챌린지입니다."));
         
         const challengeRows = await challengeDao.checkMaxChallenge(userId);
-        if (challengeRows > maxChallenge) return res.json(response.successFalse(3013, "챌린지 최대 참여 개수를 초과하였습니다."));
+        if (challengeRows >= maxChallenge) return res.json(response.successFalse(3013, "챌린지 최대 참여 개수를 초과하였습니다."));
 
         const checkLevelRows = await challengeDao.checkChallengeLevel(userId, challengeId);
         if (checkLevelRows === 0) return res.json(response.successFalse(3102, "레벨에 맞지 않는 챌린지입니다."));
