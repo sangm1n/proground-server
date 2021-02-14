@@ -56,14 +56,18 @@ exports.signUp = async function (req, res) {
         }
         
         const userInfoRows = await userDao.getUserInfo(email);
+        const userId = userInfoRows.userId;
+
         const token = await jwt.sign({
-            userId: userInfoRows.userId
+            userId: userId
         },
         secret_config.jwtsecret,
         {
             expiresIn: '365d',
             subject: 'userId'
         });
+
+        await userDao.postUserLevel(userId);
 
         const result = { jwt: token };
         return res.json(response.successTrue(1012, "회원가입에 성공하였습니다.", result));
@@ -232,22 +236,24 @@ exports.logInKakao = async function (req, res) {
  * 비밀번호 찾기 API
  */
 exports.findPassword = async function (req, res) {
-    const userId = req.verifiedToken.userId;
+    const {
+        email
+    } = req.body;
+
+    if (!email) return res.json(response.successFalse(3090, "이메일을 입력해주세요."));
     
     try {
-        const emailRows = await userDao.getUserEmail(userId);
-
         password = Math.random().toString(36).slice(6);
         const hashedPassword = await crypto.createHash('sha512').update(password).digest('hex');
 
         const mailOptions = {
             from: secret_config.ADMIN_EMAIL,
-            to: emailRows,
+            to: email,
             subject: "프로그라운드 임시 비밀번호 발급",
             html: `<p>임시 비밀번호는 <b>${password}</b> 입니다.</p>`
         };
-
-        await userDao.patchPassword(hashedPassword, userId);
+        
+        await userDao.patchPassword(hashedPassword, email);
 
         await smtpTransport.sendMail(mailOptions, (err, respond) => {
             if (err) {

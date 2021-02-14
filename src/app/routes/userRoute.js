@@ -16,7 +16,7 @@ module.exports = function(app){
     app.route('/user/profile').get(jwtMiddleware, user.profile);
     app.route('/user/profile').patch(jwtMiddleware, user.updateProfile);
     app.route('/user/profile/image').patch(jwtMiddleware, s3.upload('/profile').single('img'), user.updateProfileImage);
-    app.route('/user/password/find').post(jwtMiddleware, user.findPassword);
+    app.route('/user/password/find').post(user.findPassword);
     app.route('/user/password/change').post(jwtMiddleware, user.changePassword);
     app.route('/user/level').get(jwtMiddleware, user.userLevel);
     app.route('/user/question').post(user.userQuestion);

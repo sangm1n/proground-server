@@ -98,6 +98,24 @@ exports.postUserInfoKakao = async function (name, email, nickname, height, weigh
     }
 }
 
+// 회원가입 시 레벨 1 부여
+exports.postUserLevel = async function (userId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        insert into UserLevel (userId, level) values (?, 1);
+        `
+        const params = [userId];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+    } catch (err) {
+        logger.error(`App - postUserLevel DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
 /***
  * 로그인
  */
@@ -145,13 +163,13 @@ exports.getUserEmail = async function (userId) {
 }
 
 // 임시 비밀번호로 변경
-exports.patchPassword = async function (password, userId) {
+exports.patchPassword = async function (password, email) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        update User set password = ? where userId = ?;
+        update User set password = ? where email = ?;
         `;
-        const params = [password, userId];
+        const params = [password, email];
         const [rows] = await connection.query(
             query, params
         );
