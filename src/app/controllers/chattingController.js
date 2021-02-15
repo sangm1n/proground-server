@@ -103,6 +103,8 @@ exports.eachChatting = async function (req, res) {
             comments: chattingRows.slice(1, )
         }
 
+        if (chattingRows.length < 1) return res.json(response.successTrue(1330, "채팅 댓글이 아직 존재하지 않습니다."));
+
         if (chattingRows.slice(1, ).length < 1) return res.json(response.successTrue(1320, "채팅 대댓글이 아직 존재하지 않습니다.", {chatting: chattingRows[0]}));
         else return res.json(response.successTrue(1310, "채팅 조회에 성공하였습니다.", result));
     } catch (err) {

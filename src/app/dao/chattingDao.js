@@ -8,7 +8,7 @@ exports.getChatting = async function (userId, challengeId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         let query = `
-        select 'A' as status, c.chattingId,
+        select distinct c.chattingId,
             ifnull(v.countChatting, 0) as more,
             u.userId,
             u.userName,
@@ -35,7 +35,8 @@ exports.getChatting = async function (userId, challengeId) {
                 when w.createdAt >= date_format(now(), '%Y-%m-%d 00:00:00')
                     then date_format(w.createdAt, '%H:%i')
                 end                    as commentCreatedAt,
-            c.createdAt as compareTime
+            c.createdAt as compareTime,
+            'A' as status
         from User u
                 join UserLevel ul on u.userId = ul.userId
                 join Level l on ul.level = l.level
@@ -73,7 +74,7 @@ exports.getChatting = async function (userId, challengeId) {
         const [firstRows] = await connection.query(query, params);
 
         query = `
-        select 'B' as status, c.chattingId,
+        select distinct c.chattingId,
             ifnull(v.countChatting, 0) as more,
             u.userId,
             u.userName,
@@ -100,7 +101,8 @@ exports.getChatting = async function (userId, challengeId) {
                 when w.createdAt >= date_format(now(), '%Y-%m-%d 00:00:00')
                     then date_format(w.createdAt, '%H:%i')
                 end                    as commentCreatedAt,
-            c.createdAt as compareTime
+            c.createdAt as compareTime,
+            'B' as status
         from User u
                 join UserLevel ul on u.userId = ul.userId
                 join Level l on ul.level = l.level
@@ -138,7 +140,7 @@ exports.getChatting = async function (userId, challengeId) {
         const [secondRows] = await connection.query(query, params);
 
         query = `
-        select 'C' as status, u.userId,
+        select distinct u.userId,
             userName,
             profileImage,
             levelColor,
@@ -159,7 +161,8 @@ exports.getChatting = async function (userId, challengeId) {
                 end                as time,
             pace,
             ifnull(v.likeCount, 0) as likeCount,
-            r.createdAt as compareTime
+            r.createdAt as compareTime,
+            'C' as status
         from User u
                 join UserLevel ul on u.userId = ul.userId
                 join Level l on ul.level = l.level
@@ -289,7 +292,7 @@ exports.getEachChatting = async function (chattingId, challengeType) {
 
         if (challengeType === 'A') {
             query = `
-            select c.chattingId,
+            select distinct c.chattingId,
                 u.userId,
                 u.userName,
                 u.profileImage,
@@ -318,7 +321,7 @@ exports.getEachChatting = async function (chattingId, challengeType) {
             `;
         } else {
             query = `
-            select c.chattingId,
+            select distinct c.chattingId,
                 u.userId,
                 u.userName,
                 u.profileImage,
