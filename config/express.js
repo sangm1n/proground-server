@@ -21,7 +21,7 @@ module.exports = function () {
     require('../src/app/routes/userRoute')(app);
     require('../src/app/routes/challengeRoute')(app);
     require('../src/app/routes/chattingRoute')(app);
-    // require('../src/app/routes/runningRoute')(app);
+    require('../src/app/routes/runningRoute')(app);
     require('../src/app/routes/noticeRoute')(app);
 
     /* Web */
