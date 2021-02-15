@@ -116,6 +116,24 @@ exports.postUserLevel = async function (userId) {
     }
 }
 
+// 회원가입 시 기본 프로필 이미지 부여
+exports.postUserImage = async function (userId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        update User set profileImage = 'https://proground.s3.ap-northeast-2.amazonaws.com/profile/profile_basic_img.png' where userId = ?;
+        `
+        const params = [userId];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+    } catch (err) {
+        logger.error(`App - postUserImage DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
 /***
  * 로그인
  */

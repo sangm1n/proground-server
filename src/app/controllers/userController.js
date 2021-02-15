@@ -68,6 +68,7 @@ exports.signUp = async function (req, res) {
         });
 
         await userDao.postUserLevel(userId);
+        await userDao.postUserImage(userId);
 
         const result = { jwt: token };
         return res.json(response.successTrue(1012, "회원가입에 성공하였습니다.", result));
