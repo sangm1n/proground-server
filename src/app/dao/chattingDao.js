@@ -312,7 +312,7 @@ exports.getEachChatting = async function (chattingId, challengeType) {
                     join (select c.userId, c.challengeId, chattingId, challengeTeam, challengeColor
                         from UserChallenge uc
                                     join Chatting c on uc.challengeId = c.challengeId
-                        where challengeTeam is not null
+                        where challengeColor is not null
                         group by c.chattingId) v on c.chattingId = v.chattingId
             where parentChattingId = ?
             and u.isDeleted = 'N'
@@ -343,7 +343,7 @@ exports.getEachChatting = async function (chattingId, challengeType) {
                     join (select c.userId, c.challengeId, chattingId, challengeTeam, challengeColor
                         from UserChallenge uc
                                     join Chatting c on uc.challengeId = c.challengeId
-                        where challengeTeam is not null
+                        where challengeColor is not null
                         group by c.chattingId) v on c.chattingId = v.chattingId
             where parentChattingId = ?
             and u.isDeleted = 'N'
