@@ -353,30 +353,20 @@ exports.updateProfile = async function (req, res) {
  */
 exports.updateProfileImage = async function (req, res) {
     const userId = req.verifiedToken.userId;
-    const {
-        originImage
-    } = req.query;
-    let flag = true;
 
-    if (!originImage) flag = false;
+    if (!req.file) return res.json(response.successFalse(3060, "프로필 이미지를 입력해주세요."));
     
-    try {
-        // 기존 프로필 이미지가 있는 경우 -> 삭제 후 수정
-        if (flag) {
-            const fileName = originImage.split('/')[4];
-            s3.erase('/profile', fileName);
-        }
-        
-        if (!req.file) {
-            await userDao.patchProfileImage(null, userId);
+    try {        
+        const profileRows = await userDao.getUserProfile(userId);
+        const originProfile = profileRows.profileImage;
 
-            return res.json(response.successTrue(1062, "기본 프로필 이미지로 변경하였습니다."));
-        } else {
-            const newProfile = req.file.location;
-            await userDao.patchProfileImage(newProfile, userId);
+        const fileName = originProfile.split('/')[4];
+        s3.erase('/profile', fileName);
 
-            return res.json(response.successTrue(1061, "프로필 이미지 수정에 성공하였습니다."));
-        }
+        const newProfile = req.file.location;
+        await userDao.patchProfileImage(newProfile, userId);
+
+        return res.json(response.successTrue(1061, "프로필 이미지 수정에 성공하였습니다."));
     } catch (err) {
         logger.error(`App - updateProfileImage Query error\n: ${JSON.stringify(err)}`);
         return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
