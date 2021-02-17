@@ -368,3 +368,46 @@ exports.getChattingImage = async function (chattingId) {
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
+
+// 마지막 채팅
+exports.patchLastChatting = async function (chattingId, userId, challengeId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        update UserChallenge set lastChattingId = ? where userId = ? and challengeId = ?;
+        `;
+        const params = [chattingId, userId, challengeId];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+    } catch (err) {
+        logger.error(`App - patchLastChatting DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+// 읽지 않은 채팅
+exports.getNotReadChatting = async function (userId, challengeId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select count(chattingId) as notReadChattingCount
+        from Chatting
+        where chattingId >
+            (select lastChattingId from UserChallenge where userId = ? and challengeId = ? and lastChattingId != -1 and isDeleted = 'N')
+        and chattingId = parentChattingId
+        and isDeleted = 'N';
+        `;
+        const params = [userId, challengeId];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+
+        return rows[0]['notReadChattingCount'];
+    } catch (err) {
+        logger.error(`App - getNotReadChatting DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}

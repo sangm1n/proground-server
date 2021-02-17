@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const secret_config = require('../../../config/secret');
 
 const challengeDao = require('../dao/challengeDao');
+const chattingDao = require('../dao/chattingDao');
 let maxChallenge = 2;
 
 /***
@@ -50,9 +51,16 @@ exports.myChallenge = async function (req, res) {
 
     try {
         page = size * (page - 1);
-        const challengeRows = await challengeDao.getMyChallenge(userId, page, size);
+        let challengeRows = await challengeDao.getMyChallenge(userId, page, size);
 
         if (challengeRows.length === 0) return res.json(response.successTrue(1033, "참여중인 챌린지가 없습니다."));
+
+        for (var i = 0; i < challengeRows.length; i++) {
+            let challengeId = challengeRows[i].challengeId;
+            let notReadCount = await chattingDao.getNotReadChatting(userId, challengeId);
+
+            challengeRows[i]['notReadChattingCount'] = notReadCount;
+        }
 
         return res.json(response.successTrue(1020, "챌린지 조회에 성공하였습니다.", challengeRows));
     } catch (err) {

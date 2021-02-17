@@ -43,7 +43,11 @@ exports.allChatting = async function (req, res) {
         const chatting = [...first, ...second, ...third];
 
         chatting.sort(function (a, b) { return a.compareTime - b.compareTime });
+
         const resultRows = chatting.slice(page, size);
+
+        const lastChattingId = chatting.slice(-1)[0].chattingId;
+        await chattingDao.patchLastChatting(lastChattingId, userId, challengeId);
 
         if (resultRows.length === 0) return res.json(response.successTrue(1350, "아직 채팅 내용이 없습니다."));
         return res.json(response.successTrue(1300, "해당 챌린지 채팅 조회에 성공하였습니다.", resultRows));
