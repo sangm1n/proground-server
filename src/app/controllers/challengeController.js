@@ -83,10 +83,10 @@ exports.challengeInfo = async function (req, res) {
         const cardRows = await challengeDao.getCard(challengeId);
         const colorRows = await challengeDao.getColor(challengeId);
 
-        // status - A: 참가 가능 / B: 참가 불가능 / C: 참가중
+        // status - A: 참가 가능 / B: 참가 불가능 / C: 참가중 / D: 비회원
         let status;
         if (token === undefined) {
-            status = 'B';
+            status = 'D';
         } else {
             const userId = token.userId;
 
