@@ -125,9 +125,23 @@ exports.getChatting = async function (userId, challengeId) {
             profileImage,
             levelColor,
             distance,
-            date_format(endTime, '%Y.%m.%d %H:%i') as time,
+            case
+                when timestampdiff(minute, startTime, endTime) < 1
+                    then concat('00:', lpad(concat(timestampdiff(second, startTime, endTime)), 2, 0))
+                when timestampdiff(minute, startTime, endTime) >= 1 and timestampdiff(minute, startTime, endTime) < 60
+                    then concat(lpad(concat(timestampdiff(minute, startTime, endTime)), 2, 0), ':',
+                                lpad(concat(timestampdiff(second, startTime, endTime) -
+                                            timestampdiff(minute, startTime, endTime) * 60), 2, 0))
+                when timestampdiff(minute, startTime, endTime) >= 60
+                    then concat(lpad(concat(timestampdiff(hour, startTime, endTime)), 2, 0), ':',
+                                lpad(concat(timestampdiff(minute, startTime, endTime) -
+                                            timestampdiff(hour, startTime, endTime) * 60), 2, 0), ':',
+                                lpad(concat(timestampdiff(second, startTime, endTime) -
+                                            timestampdiff(minute, startTime, endTime) * 60), 2, 0))
+                end as time,
             pace,
             ifnull(v.likeCount, 0) as likeCount,
+            date_format(endTime, '%Y.%m.%d %H:%i') as endTime,
             r.createdAt as compareTime,
             'C' as status
         from User u
