@@ -36,7 +36,7 @@ exports.allChallenges = async function (req, res) {
 
 /***
  * update : 2021-01-30
- * My 챌린지 조회 API -> 안읽은 채팅 개수 가져오는거 추가해야함
+ * My 챌린지 조회 API -> 안읽은 채팅 개수 가져오는거 추가해야함 (완료 !)
  */
 exports.myChallenge = async function (req, res) {
     const userId = req.verifiedToken.userId;

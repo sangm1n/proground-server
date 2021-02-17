@@ -16,12 +16,7 @@ exports.getChatting = async function (userId, challengeId) {
             l.levelColor,
             c.message,
             c.image,
-            case
-                when c.createdAt < date_format(now(), '%Y-%m-%d 00:00:00')
-                    then date_format(c.createdAt, '%m-%d %H:%i')
-                when c.createdAt >= date_format(now(), '%Y-%m-%d 00:00:00')
-                    then date_format(c.createdAt, '%H:%i')
-                end                    as createdAt,
+            date_format(c.createdAt, '%H:%i') as createdAt,
             w.chattingId               as commentId,
             w.userId                   as commentUserId,
             w.userName                 as commentUserName,
@@ -29,12 +24,7 @@ exports.getChatting = async function (userId, challengeId) {
             w.levelColor               as commentLevelColor,
             w.message                  as commentMessage,
             w.image                    as commentImage,
-            case
-                when w.createdAt < date_format(now(), '%Y-%m-%d 00:00:00')
-                    then date_format(w.createdAt, '%m-%d %H:%i')
-                when w.createdAt >= date_format(now(), '%Y-%m-%d 00:00:00')
-                    then date_format(w.createdAt, '%H:%i')
-                end                    as commentCreatedAt,
+            date_format(w.createdAt, '%H:%i') as commentCreatedAt,
             c.createdAt as compareTime,
             'A' as status
         from User u
@@ -82,12 +72,7 @@ exports.getChatting = async function (userId, challengeId) {
             l.levelColor,
             c.message,
             c.image,
-            case
-                when c.createdAt < date_format(now(), '%Y-%m-%d 00:00:00')
-                    then date_format(c.createdAt, '%m-%d %H:%i')
-                when c.createdAt >= date_format(now(), '%Y-%m-%d 00:00:00')
-                    then date_format(c.createdAt, '%H:%i')
-                end                    as createdAt,
+            date_format(c.createdAt, '%H:%i') as createdAt,
             w.chattingId               as commentId,
             w.userId                   as commentUserId,
             w.userName                 as commentUserName,
@@ -95,12 +80,7 @@ exports.getChatting = async function (userId, challengeId) {
             w.levelColor               as commentLevelColor,
             w.message                  as commentMessage,
             w.image                    as commentImage,
-            case
-                when w.createdAt < date_format(now(), '%Y-%m-%d 00:00:00')
-                    then date_format(w.createdAt, '%m-%d %H:%i')
-                when w.createdAt >= date_format(now(), '%Y-%m-%d 00:00:00')
-                    then date_format(w.createdAt, '%H:%i')
-                end                    as commentCreatedAt,
+            date_format(w.createdAt, '%H:%i') as commentCreatedAt,
             c.createdAt as compareTime,
             'B' as status
         from User u
@@ -145,20 +125,7 @@ exports.getChatting = async function (userId, challengeId) {
             profileImage,
             levelColor,
             distance,
-            case
-                when timestampdiff(minute, startTime, endTime) < 1
-                    then concat('00:00:', lpad(concat(timestampdiff(second, startTime, endTime)), 2, 0))
-                when timestampdiff(minute, startTime, endTime) >= 1 and timestampdiff(minute, startTime, endTime) < 60
-                    then concat('00:', lpad(concat(timestampdiff(minute, startTime, endTime)), 2, 0), ':',
-                                lpad(concat(timestampdiff(second, startTime, endTime) -
-                                            timestampdiff(minute, startTime, endTime) * 60), 2, 0))
-                when timestampdiff(minute, startTime, endTime) >= 60
-                    then concat(lpad(concat(timestampdiff(hour, startTime, endTime)), 2, 0), ':',
-                                lpad(concat(timestampdiff(minute, startTime, endTime) -
-                                            timestampdiff(hour, startTime, endTime) * 60), 2, 0), ':',
-                                lpad(concat(timestampdiff(second, startTime, endTime) -
-                                            timestampdiff(minute, startTime, endTime) * 60), 2, 0))
-                end                as time,
+            date_format(endTime, '%Y.%m.%d %H:%i') as time,
             pace,
             ifnull(v.likeCount, 0) as likeCount,
             r.createdAt as compareTime,

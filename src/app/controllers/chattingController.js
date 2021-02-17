@@ -76,7 +76,18 @@ exports.makeChatting = async function (req, res) {
         if (req.files.length < 1) await chattingDao.postChatting(challengeId, userId, message);
         else await chattingDao.postChatting(challengeId, userId, message, req.files[0].location);
 
-        return res.json(response.successTrue(1310, "해당 챌린지 채팅 생성에 성공하였습니다."));
+        const chattingRows = await chattingDao.getChatting(userId, challengeId);
+
+        const first = chattingRows[0];
+        const second = chattingRows[1];
+        const third = chattingRows[2];
+
+        const chatting = [...first, ...second, ...third];
+
+        chatting.sort(function (a, b) { return a.compareTime - b.compareTime });
+        const resultRows = chatting.slice(-10);
+
+        return res.json(response.successTrue(1310, "해당 챌린지 채팅 생성에 성공하였습니다.", resultRows));
     } catch (err) {
         logger.error(`App - makeChatting Query error\n: ${err.message}`);
         return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
