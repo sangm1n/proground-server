@@ -301,3 +301,25 @@ exports.postUserQuestion = async function (email, question) {
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
+
+// 비회원 생성
+exports.postNonUser = async function () {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        let query = `
+        Insert into NonUser (isDeleted) values ('N');
+        `;
+        await connection.query( query );
+
+        query = `
+        select nonUserId from NonUser where isDeleted = 'N' order by createdAt desc limit 1;
+        `
+        const [rows] = await connection.query( query );
+        connection.release();
+
+        return rows[0];
+    } catch (err) {
+        logger.error(`App - postNonUser DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}

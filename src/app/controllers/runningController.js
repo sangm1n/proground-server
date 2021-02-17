@@ -14,11 +14,11 @@ const runningDao = require('../dao/runningDao');
 exports.recordRunning = async function (req, res) {
     let token = req.headers['x-access-token'] || req.query.token;
     const {
-        distance, startTime, endTime, pace, altitude, calorie
+        nonUserId, distance, startTime, endTime, pace, altitude, calorie
     } = req.body;
 
     if (token) token = jwt.verify(token, secret_config.jwtsecret);
-
+    if (token === undefined & nonUserId === undefined) return res.json(response.successFalse(2506, "비회원 Id를 입력해주세요."));
     if (!distance) return res.json(response.successFalse(2500, "러닝 거리를 입력해주세요."));
     if (!startTime) return res.json(response.successFalse(2501, "러닝 시작 시간을 입력해주세요."));
     if (!endTime) return res.json(response.successFalse(2502, "러닝 종료 시간을 입력해주세요."));
@@ -29,18 +29,7 @@ exports.recordRunning = async function (req, res) {
     try {
         // 비회원
         if (token === undefined) {
-            const userRows = await runningDao.getUserId();
-            let userArray = []
-            for (var i = 0; i < userRows.length; i++) {
-                userArray.push(userRows[i].userId);
-            }
-
-            const minUserId = Math.min.apply(null, userArray);
-            let minimum;
-            if (minUserId > 0) minimum = -1;
-            else minimum = minUserId - 1;
-
-            await runningDao.postRunning(-1, minimum, distance, startTime, endTime, pace, altitude, calorie);
+            await runningDao.postRunning(-1, -1, nonUserId, distance, startTime, endTime, pace, altitude, calorie);
             return res.json(response.successTrue(1501, "비회원 러닝 기록에 성공하였습니다."));
         // 회원
         } else {
@@ -48,12 +37,12 @@ exports.recordRunning = async function (req, res) {
             const challengeRows = await runningDao.getUserChallenge(userId);
             
             if (challengeRows.length < 1) {
-                await runningDao.postRunning(-1, userId, distance, startTime, endTime, pace, altitude, calorie);
+                await runningDao.postRunning(-1, userId, -1, distance, startTime, endTime, pace, altitude, calorie);
             } else {
                 for (var i = 0; i < challengeRows.length; i++) {
                     let challengeId = challengeRows[i].challengeId;
 
-                    await runningDao.postRunning(challengeId, userId, distance, startTime, endTime, pace, altitude, calorie);
+                    await runningDao.postRunning(challengeId, userId, -1, distance, startTime, endTime, pace, altitude, calorie);
                 }
             }
             return res.json(response.successTrue(1500, "회원 러닝 기록에 성공하였습니다."));

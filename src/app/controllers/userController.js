@@ -431,6 +431,21 @@ exports.userQuestion = async function (req, res) {
     }
 }
 
+/***
+ * update : 2021-02-17
+ * 비회원 생성 API
+ */
+exports.nonUser = async function (req, res) {    
+    try {
+        const nonUserRows = await userDao.postNonUser();
+        
+        return res.json(response.successTrue(1900, "비회원 생성에 성공하였습니다.", nonUserRows));
+    } catch (err) {
+        logger.error(`App - nonUser Query error\n: ${JSON.stringify(err)}`);
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+    }
+}
+
 // 테스트용
 passport.use('kakao-login', new KakaoStrategy({
     clientID: '091e3895665e66cd5caa8bd6aa8c28c5',

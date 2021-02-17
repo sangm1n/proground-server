@@ -40,14 +40,14 @@ exports.getUserId = async function () {
 }
 
 // 러닝 기록 입력
-exports.postRunning = async function (challengeId, userId, distance, startTime, endTime, pace, altitude, calorie) {
+exports.postRunning = async function (challengeId, userId, nonUserId, distance, startTime, endTime, pace, altitude, calorie) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        insert into Running (challengeId, userId, distance, startTime, endTime, pace, altitude, calorie)
-        values (?, ?, ?, ?, ?, ?, ?, ?);
+        insert into Running (challengeId, userId, nonUserId, distance, startTime, endTime, pace, altitude, calorie)
+        values (?, ?, ?, ?, ?, ?, ?, ?, ?);
         `;
-        const params = [challengeId, userId, distance, startTime, endTime, pace, altitude, calorie];
+        const params = [challengeId, userId, nonUserId, distance, startTime, endTime, pace, altitude, calorie];
         const [rows] = await connection.query(query, params);
         connection.release();
     } catch (err) {
