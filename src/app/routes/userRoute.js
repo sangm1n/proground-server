@@ -20,6 +20,7 @@ module.exports = function(app){
     app.route('/user/password/change').post(jwtMiddleware, user.changePassword);
     app.route('/user/level').get(jwtMiddleware, user.userLevel);
     app.route('/user/question').post(user.userQuestion);
+    app.route('/non-user').post(user.nonUser);
 
     // 테스트용
     app.route('/image').post(s3.upload('/profile').single('img'));
