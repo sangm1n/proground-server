@@ -23,6 +23,7 @@ module.exports = function () {
     require('../src/app/routes/chattingRoute')(app);
     require('../src/app/routes/runningRoute')(app);
     require('../src/app/routes/noticeRoute')(app);
+    require('../src/app/routes/activityRoute')(app);
 
     /* Web */
     // require('../src/web/routes/indexRoute')(app);
