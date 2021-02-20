@@ -161,16 +161,62 @@ exports.getCardHistory = async function (userId, page, size) {
         and u.isDeleted = 'N'
         and uc.isDeleted = 'N'
         and c.isDeleted = 'N'
-        limit ` + page + `, ` + size + `
+        limit ?, ?
         `;
-        const params = [userId, page, size];
+        const params = [userId, Number(page), Number(size)];
         const [rows] = await connection.query(query, params);
 
         connection.release();
 
         return rows;
     } catch (err) {
-        logger.error(`App - getRunningHistory DB Connection error\n: ${err.message}`);
+        logger.error(`App - getCardHistory DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+// 챌린지 기록
+exports.getChallengeHistory = async function (userId, page, size) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select c.challengeId,
+            image,
+            concat(challengeName, ' with ', w.nickname) as challengeName,
+            minLevel,
+            maxLevel,
+            c.distance,
+            v.distance                                  as totalDistance,
+            if(challengeType = 'A', '목표달성', '경쟁전')      as challengeType,
+            date_format(startDate, '%y.%m.%d')          as startDate,
+            date_format(endDate, '%y.%m.%d')            as endDate
+        from Challenge c
+                join UserChallenge uc on c.challengeId = uc.challengeId
+                join (select u.userId, nickname, uc.challengeId
+                    from User u
+                                join UserChallenge uc on u.userId = uc.userId
+                    where u.isDeleted = 'N') w
+                    on c.challengeId = w.challengeId
+                join (select runningId, challengeId, userId, sum(distance) as distance
+                    from Running
+                    where userId = ? and isDeleted = 'N'
+                    group by challengeId) v on c.challengeId = v.challengeId
+        where c.isDeleted = 'N'
+        and uc.isDeleted = 'N'
+        and uc.userId = ?
+        and endDate < str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H')
+        group by challengeId
+        order by endDate desc
+        limit ?, ?
+        `;
+        const params = [userId, userId, Number(page), Number(size)];
+        const [rows] = await connection.query(query, params);
+
+        connection.release();
+
+        return rows;
+    } catch (err) {
+        logger.error(`App - getCardHistory DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }

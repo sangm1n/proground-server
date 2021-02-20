@@ -5,5 +5,5 @@ module.exports = function(app){
     app.get('/activities/running', activity.runningStatistic);
     app.get('/activities/running/history', activity.runningHistory);
     app.get('/activities/card', activity.cardHistory);
-    //app.get('/activities/challenge', activity.challengeHistory);
+    app.get('/activities/challenge', activity.challengeHistory);
 };
