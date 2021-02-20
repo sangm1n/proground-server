@@ -129,9 +129,42 @@ exports.getRunningHistory = async function (state) {
         where ` + state + `
         and isDeleted = 'N'
         group by endTime
-        order by createdAt desc;
+        order by endTime desc;
         `;
         const [rows] = await connection.query(query);
+
+        connection.release();
+
+        return rows;
+    } catch (err) {
+        logger.error(`App - getRunningHistory DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+// 카드 기록
+exports.getCardHistory = async function (userId, page, size) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select c.cardId,
+            title,
+            subTitle,
+            cardImage,
+            userName,
+            profileImage,
+            date_format(uc.createdAt, '%Y.%m.%d') as createdAT
+        from Card c
+                join UserCard uc on c.cardId = uc.cardId
+                join User u on u.userId = uc.userId
+        where u.userId = ?
+        and u.isDeleted = 'N'
+        and uc.isDeleted = 'N'
+        and c.isDeleted = 'N'
+        limit ` + page + `, ` + size + `
+        `;
+        const params = [userId, page, size];
+        const [rows] = await connection.query(query, params);
 
         connection.release();
 

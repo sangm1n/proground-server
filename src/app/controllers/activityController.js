@@ -80,7 +80,8 @@ exports.runningHistory = async function (req, res) {
         if (token === undefined) {
             const state = "nonUserId = " + nonUserId;
             const historyRows = await activityDao.getRunningHistory(state);
-            
+
+            if (historyRows.length < 1) return res.json(response.successTrue(1712, "아직 러닝 기록이 없습니다."));
             return res.json(response.successTrue(1711, "비회원 러닝 기록 조회에 성공하였습니다.", historyRows));
         // 회원
         } else {
@@ -88,7 +89,48 @@ exports.runningHistory = async function (req, res) {
             const state = "userId = " + userId;
             const historyRows = await activityDao.getRunningHistory(state);
             
+            if (historyRows.length < 1) return res.json(response.successTrue(1712, "아직 러닝 기록이 없습니다."));
             return res.json(response.successTrue(1710, "회원 러닝 기록 조회에 성공하였습니다.", historyRows));
+        }
+    } catch (err) {
+        logger.error(`App - runningHistory Query error\n: ${err.message}`);
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+    }
+}
+
+/***
+ * update : 2021-02-20
+ * 카드 조회 API
+ */
+exports.cardHistory = async function (req, res) {
+    let token = req.headers['x-access-token'] || req.query.token;
+    if (token) token = jwt.verify(token, secret_config.jwtsecret);
+
+    const {
+        nonUserId
+    } = req.body;
+    let {
+        page, size
+    } = req.query;
+
+    if (token === undefined & !nonUserId) return res.json(response.successFalse(2700, "비회원 Id를 입력해주세요."));
+    if (!page) return res.json(response.successFalse(2060, "페이지를 입력해주세요."));
+    if (!size) return res.json(response.successFalse(2070, "사이즈를 입력해주세요."));
+    if (page < 1) return res.json(response.successFalse(2061, "페이지 번호를 확인해주세요."));
+
+    try {
+        page = size * (page - 1);
+
+        // 비회원
+        if (token === undefined) {
+            return res.json(response.successTrue(1721, "아직 받은 카드가 없습니다."));
+        // 회원
+        } else {
+            const userId = token.userId;
+            const historyRows = await activityDao.getCardHistory(userId, page, size);
+            
+            if (historyRows.length < 1) return res.json(response.successTrue(1721, "아직 받은 카드가 없습니다."));
+            return res.json(response.successTrue(1720, "받은 카드 조회에 성공하였습니다.", historyRows));
         }
     } catch (err) {
         logger.error(`App - runningHistory Query error\n: ${err.message}`);
