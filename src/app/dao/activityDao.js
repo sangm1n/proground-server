@@ -5,7 +5,7 @@ const { pool } = require("../../../config/database");
  * 회원 러닝 통계 조회
  */
 // 최근 7일
-exports.getRecentRunning = async function (state) {
+exports.getRecentRunning = async function (state, maxValue) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         let query = `
@@ -22,7 +22,7 @@ exports.getRecentRunning = async function (state) {
 
         query = `
         select ifnull(sum(v.distance), 0.00) as distance,
-            ifnull(sum(v.distance) * 10, 0.00) as ratio,
+            ifnull(round((sum(v.distance) / ` + maxValue + `) * 100, 2), 0.00) as ratio,
             if(date_format(w.date, '%c/%e') = date_format(now(), '%c/%e'), 'Today', date_format(w.date, '%c/%e')) as date
         from (select distinct startTime, endTime, distance
             from Running

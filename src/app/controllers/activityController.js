@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const secret_config = require('../../../config/secret');
 
 const activityDao = require('../dao/activityDao');
+let maxValue = 10;
 
 /***
  * update : 2021-02-19
@@ -25,7 +26,7 @@ exports.runningStatistic = async function (req, res) {
         // 비회원
         if (token === undefined) {
             const state = "nonUserId = " + nonUserId;
-            const recentRows = await activityDao.getRecentRunning(state);
+            const recentRows = await activityDao.getRecentRunning(state, maxValue);
             const totalRows = await activityDao.getTotalRunning(state);
 
             const result = {
@@ -41,7 +42,7 @@ exports.runningStatistic = async function (req, res) {
         } else {
             const userId = token.userId;
             const state = "userId = " + userId;
-            const recentRows = await activityDao.getRecentRunning(state);
+            const recentRows = await activityDao.getRecentRunning(state, maxValue);
             const totalRows = await activityDao.getTotalRunning(state);
 
             const result = {
