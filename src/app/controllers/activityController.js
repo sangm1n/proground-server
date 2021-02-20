@@ -177,3 +177,67 @@ exports.challengeHistory = async function (req, res) {
         return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
     }
 }
+
+/***
+ * update : 2021-02-20
+ * 추천 미션 조회 API
+ */
+exports.missionToDo = async function (req, res) {
+    let token = req.headers['x-access-token'] || req.query.token;
+    if (token) token = jwt.verify(token, secret_config.jwtsecret);
+
+    const {
+        nonUserId
+    } = req.body;
+
+    if (token === undefined & !nonUserId) return res.json(response.successFalse(2700, "비회원 Id를 입력해주세요."));
+
+    try {
+        // 비회원
+        if (token === undefined) {
+            return res.json(response.successTrue(1741, "아직 추천된 미션이 없습니다."));
+        // 회원
+        } else {
+            const userId = token.userId;
+            const historyRows = await activityDao.getRecommendedMission(userId);
+            
+            if (historyRows.length < 1) return res.json(response.successTrue(1741, "아직 추천된 미션이 없습니다."));
+            return res.json(response.successTrue(1740, "추천 미션 조회에 성공하였습니다.", historyRows));
+        }
+    } catch (err) {
+        logger.error(`App - missionToDo Query error\n: ${err.message}`);
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+    }
+}
+
+/***
+ * update : 2021-02-20
+ * 달성한 미션 조회 API
+ */
+exports.missionHistory = async function (req, res) {
+    let token = req.headers['x-access-token'] || req.query.token;
+    if (token) token = jwt.verify(token, secret_config.jwtsecret);
+
+    const {
+        nonUserId
+    } = req.body;
+
+    if (token === undefined & !nonUserId) return res.json(response.successFalse(2700, "비회원 Id를 입력해주세요."));
+
+    try {
+        // 비회원
+        if (token === undefined) {
+            return res.json(response.successTrue(1751, "아직 달성한 미션이 없습니다."));
+        // 회원
+        } else {
+            const userId = token.userId;
+            const historyRows = await activityDao.getMissionHistory(userId);
+            
+            if (historyRows.length < 1) return res.json(response.successTrue(1751, "아직 달성한 미션이 없습니다."));
+            return res.json(response.successTrue(1750, "달성한 미션 조회에 성공하였습니다.", historyRows));
+        }
+    } catch (err) {
+        logger.error(`App - missionHistory Query error\n: ${err.message}`);
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+    }
+}

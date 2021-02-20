@@ -153,7 +153,7 @@ exports.getCardHistory = async function (userId, page, size) {
             cardImage,
             userName,
             profileImage,
-            date_format(uc.createdAt, '%Y.%m.%d') as createdAT
+            date_format(uc.createdAt, '%Y.%m.%d') as createdAt
         from Card c
                 join UserCard uc on c.cardId = uc.cardId
                 join User u on u.userId = uc.userId
@@ -217,6 +217,86 @@ exports.getChallengeHistory = async function (userId, page, size) {
         return rows;
     } catch (err) {
         logger.error(`App - getCardHistory DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+// 추천 미션
+exports.getRecommendedMission = async function (userId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select m.missionId, distance, time, leaderId, nickname, timestampdiff(day, now(), endDate) + 1 as date
+        from Mission m
+                join UserMission um on m.missionId = um.missionId
+                join User u on m.leaderId = u.userId
+        where um.userId = ?
+        and um.isDeleted = 'N'
+        and u.isDeleted = 'N'
+        and m.isDeleted = 'N'
+        and um.complete = 'N';
+        `;
+        const params = [userId];
+        const [rows] = await connection.query(query, params);
+
+        connection.release();
+
+        return rows;
+    } catch (err) {
+        logger.error(`App - getRecommendedMission DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+// 달성한 미션
+exports.getMissionHistory = async function (userId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        let query = `
+        select distinct m.leaderId, nickname, v.missionCount
+        from Mission m
+                join UserMission um on m.missionId = um.missionId
+                join User u on m.leaderId = u.userId
+                join (select leaderId, count(um.missionId) as missionCount
+                    from UserMission um
+                                join Mission m on m.missionId = um.missionId
+                    where um.userId = ?
+                        and um.complete = 'Y'
+                    group by leaderId) v on m.leaderId = v.leaderId
+        where um.userId = ?
+        and m.isDeleted = 'N'
+        and um.isDeleted = 'N'
+        and um.complete = 'Y';
+        `;
+        let params = [userId, userId];
+        let [rows] = await connection.query(query, params);
+
+        query = `
+        select m.missionId, distance, time, pace, date_format(um.updatedAt, '%Y-%m-%d') as updatedAt
+        from Mission m
+                join UserMission um on m.missionId = um.missionId
+                join User u on m.leaderId = u.userId
+        where um.userId = ?
+        and leaderId = ?
+        and m.isDeleted = 'N'
+        and um.isDeleted = 'N'
+        and um.complete = 'Y'
+        order by um.updatedAt desc;
+        `
+        
+        for (var i = 0; i < rows.length; i++) {
+            let leaderId = rows[i].leaderId;
+            let params = [userId, leaderId];
+            let [tmp] = await connection.query(query, params);
+
+            rows[i].mission = tmp
+        }
+
+        connection.release();
+
+        return rows;
+    } catch (err) {
+        logger.error(`App - getMissionHistory DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
