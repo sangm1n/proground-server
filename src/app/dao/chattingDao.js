@@ -162,6 +162,17 @@ exports.getChatting = async function (userId, challengeId) {
         `
         params = [challengeId];
         const [thirdRows] = await connection.query(query, params);
+        
+        query = `
+        select challengeColor from UserChallenge where userId = ? and challengeId = ? and isDeleted = 'N';
+        `
+        for (var i = 0; i < thirdRows.length; i++) {
+            let userId = thirdRows[i].userId;
+            params = [userId, challengeId];
+            let [rows] = await connection.query(query, params);
+
+            thirdRows[i].challengeColor = rows[0].challengeColor;
+        }
 
         connection.release();
 
