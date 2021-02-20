@@ -4,4 +4,5 @@ module.exports = function(app){
 
     app.route('/running').post(running.recordRunning);
     app.route('/running/counts').get(running.countRunning);
+    app.route('/running/:runningId/like').patch(jwtMiddleware, running.likeRunning);
 };

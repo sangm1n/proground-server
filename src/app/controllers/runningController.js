@@ -6,6 +6,8 @@ const jwt = require('jsonwebtoken');
 const secret_config = require('../../../config/secret');
 
 const runningDao = require('../dao/runningDao');
+const challengeDao = require('../dao/challengeDao');
+const chattingDao = require('../dao/chattingDao');
 
 /***
  * update : 2021-02-15
@@ -66,6 +68,59 @@ exports.countRunning = async function (req, res) {
         return res.json(response.successTrue(1510, "오늘 달린 회원 수 조회에 성공하였습니다.", countRows));
     } catch (err) {
         logger.error(`App - countRunning Query error\n: ${err.message}`);
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+    }
+}
+
+/***
+ * update : 2021-02-20
+ * 러닝 기록 좋아요 API
+ */
+exports.likeRunning = async function (req, res) {
+    const userId = req.verifiedToken.userId;
+    const {
+        runningId
+    } = req.params;
+    const {
+        challengeId
+    } = req.query;
+
+    if (!runningId) return res.json(response.successFalse(2600, "러닝 번호를 입력해주세요."));
+    if (!challengeId) return res.json(response.successFalse(2601, "챌린지 번호를 입력해주세요."));
+
+    try {
+        const checkRows = await runningDao.checkRunningId(runningId);
+        const checkChallengeRows = await challengeDao.checkChallenge(challengeId);
+        if (checkRows === 0) return res.json(response.successFalse(3600, "존재하지 않는 러닝입니다."));
+        if (checkChallengeRows === 0) return res.json(response.successFalse(3601, "존재하지 않는 챌린지입니다."));
+
+        const existRows = await runningDao.checkRunningLike(userId, runningId);
+        // 새로 좋아요 테이블에 삽입
+        if (existRows === 0) {
+            await runningDao.insertRunningLike(userId, runningId);
+        // 수정
+        } else {
+            let status = await runningDao.getLikeStatus(userId, runningId);
+            if (status === 'Y') status = 'N';
+            else status = 'Y';
+
+            await runningDao.patchRunningLike(status, userId, runningId);
+        }
+
+        const chattingRows = await chattingDao.getChatting(userId, challengeId);
+
+        const first = chattingRows[0];
+        const second = chattingRows[1];
+        const third = chattingRows[2];
+
+        const chatting = [...first, ...second, ...third];
+
+        chatting.sort(function (a, b) { return a.compareTime - b.compareTime });
+        const resultRows = chatting.slice(-10);
+
+        return res.json(response.successTrue(1600, "러닝 좋아요 클릭에 성공하였습니다.", resultRows));
+    } catch (err) {
+        logger.error(`App - likeRunning Query error\n: ${err.message}`);
         return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
     }
 }

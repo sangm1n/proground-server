@@ -78,3 +78,88 @@ exports.getRunningCount = async function () {
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
+
+// 러닝 Id 체크
+exports.checkRunningId = async function (runningId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select exists(select runningId from Running where runningId = ? and isDeleted = 'N') as exist;
+        `;
+        const params = [runningId];
+        const [rows] = await connection.query(query, params);
+        connection.release();
+
+        return rows[0]['exist'];
+    } catch (err) {
+        logger.error(`App - getRunningCount DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.checkRunningLike = async function (userId, runningId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select exists(select runningId from RunningLike where userId = ? and runningId = ?) as exist;
+        `;
+        const params = [userId, runningId];
+        const [rows] = await connection.query(query, params);
+        connection.release();
+
+        return rows[0]['exist'];
+    } catch (err) {
+        logger.error(`App - getRunningCount DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+/***
+ * 러닝 기록 좋아요
+ */
+exports.getLikeStatus = async function (userId, runningId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select status from RunningLike where userId = ? and runningId = ?;
+        `;
+        const params = [userId, runningId];
+        const [rows] = await connection.query(query, params);
+        connection.release();
+
+        return rows[0]['status'];
+    } catch (err) {
+        logger.error(`App - getLikeStatus DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.insertRunningLike = async function (userId, runningId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        insert into RunningLike (userId, runningId) values (?, ?);
+        `;
+        const params = [userId, runningId];
+        const [rows] = await connection.query(query, params);
+        connection.release();
+    } catch (err) {
+        logger.error(`App - insertRunningLike DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.patchRunningLike = async function (status, userId, runningId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        update RunningLike set status = ? where userId = ? and runningId = ?;
+        `;
+        const params = [status, userId, runningId];
+        const [rows] = await connection.query(query, params);
+        connection.release();
+    } catch (err) {
+        logger.error(`App - patchRunningLike DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
