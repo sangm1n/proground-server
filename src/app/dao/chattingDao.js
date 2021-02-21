@@ -145,7 +145,7 @@ exports.getChatting = async function (userId, challengeId) {
                         ifnull(v.likeCount, 0)                 as likeCount,
                         ifnull(w.status, 'N')                  as likeStatus,
                         date_format(endTime, '%Y.%m.%d %H:%i') as endTime,
-                        r.createdAt                            as compareTime,
+                        r.endTime                            as compareTime,
                         'C'                                    as status
         from User u
                 join UserLevel ul on u.userId = ul.userId
@@ -402,13 +402,13 @@ exports.getChattingImage = async function (chattingId) {
 }
 
 // 마지막 채팅
-exports.patchLastChatting = async function (chattingId, userId, challengeId) {
+exports.patchLastChatting = async function (lastReadTime, userId, challengeId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        update UserChallenge set lastChattingId = ? where userId = ? and challengeId = ?;
+        update UserChallenge set lastReadTime = ? where userId = ? and challengeId = ?;
         `;
-        const params = [chattingId, userId, challengeId];
+        const params = [lastReadTime, userId, challengeId];
         const [rows] = await connection.query(
             query, params
         );
@@ -423,21 +423,40 @@ exports.patchLastChatting = async function (chattingId, userId, challengeId) {
 exports.getNotReadChatting = async function (userId, challengeId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
-        const query = `
+        let query = `
         select count(chattingId) as notReadChattingCount
         from Chatting
-        where chattingId >
-            (select lastChattingId from UserChallenge where userId = ? and challengeId = ? and lastChattingId != -1 and isDeleted = 'N')
+        where createdAt > (select lastReadTime
+                        from UserChallenge
+                        where userId = ?
+                            and challengeId = ?
+                            and lastReadTime is not null
+                            and isDeleted = 'N')
         and chattingId = parentChattingId
+        and challengeId = ?
         and isDeleted = 'N';
         `;
-        const params = [userId, challengeId];
-        const [rows] = await connection.query(
-            query, params
-        );
+        const params = [userId, challengeId, challengeId];
+        const [firstRows] = await connection.query(query, params);
+
+        query = `
+        select count(runningId) as notReadRunningCount
+        from Running
+        where endTime > (select lastReadTime
+                        from UserChallenge
+                        where userId = ?
+                        and challengeId = ?
+                        and lastReadTime is not null
+                        and isDeleted = 'N')
+        and challengeId = ?
+        and isDeleted = 'N';
+        `
+        const [secondRows] = await connection.query(query, params);
+
+        const result = firstRows[0]['notReadChattingCount'] + secondRows[0]['notReadRunningCount'];
         connection.release();
 
-        return rows[0]['notReadChattingCount'];
+        return result;
     } catch (err) {
         logger.error(`App - getNotReadChatting DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
