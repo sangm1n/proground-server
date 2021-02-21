@@ -18,9 +18,9 @@ exports.runningStatistic = async function (req, res) {
 
     const {
         nonUserId
-    } = req.body;
+    } = req.params;
 
-    if (token === undefined & !nonUserId) return res.json(response.successFalse(2700, "비회원 Id를 입력해주세요."));
+    if (token === undefined & nonUserId == 0) return res.json(response.successFalse(2700, "비회원 Id를 입력해주세요."));
 
     try {
         // 비회원
@@ -71,9 +71,9 @@ exports.runningHistory = async function (req, res) {
 
     const {
         nonUserId
-    } = req.body;
+    } = req.params;
 
-    if (token === undefined & !nonUserId) return res.json(response.successFalse(2700, "비회원 Id를 입력해주세요."));
+    if (token === undefined & nonUserId == 0) return res.json(response.successFalse(2700, "비회원 Id를 입력해주세요."));
 
     try {
         // 비회원
@@ -108,12 +108,12 @@ exports.cardHistory = async function (req, res) {
 
     const {
         nonUserId
-    } = req.body;
+    } = req.params;
     let {
         page, size
     } = req.query;
 
-    if (token === undefined & !nonUserId) return res.json(response.successFalse(2700, "비회원 Id를 입력해주세요."));
+    if (token === undefined & nonUserId == 0) return res.json(response.successFalse(2700, "비회원 Id를 입력해주세요."));
     if (!page) return res.json(response.successFalse(2060, "페이지를 입력해주세요."));
     if (!size) return res.json(response.successFalse(2070, "사이즈를 입력해주세요."));
     if (page < 1) return res.json(response.successFalse(2061, "페이지 번호를 확인해주세요."));
@@ -148,12 +148,12 @@ exports.challengeHistory = async function (req, res) {
 
     const {
         nonUserId
-    } = req.body;
+    } = req.params;
     let {
         page, size
     } = req.query;
 
-    if (token === undefined & !nonUserId) return res.json(response.successFalse(2700, "비회원 Id를 입력해주세요."));
+    if (token === undefined & nonUserId == 0) return res.json(response.successFalse(2700, "비회원 Id를 입력해주세요."));
     if (!page) return res.json(response.successFalse(2060, "페이지를 입력해주세요."));
     if (!size) return res.json(response.successFalse(2070, "사이즈를 입력해주세요."));
     if (page < 1) return res.json(response.successFalse(2061, "페이지 번호를 확인해주세요."));
@@ -188,9 +188,9 @@ exports.missionToDo = async function (req, res) {
 
     const {
         nonUserId
-    } = req.body;
+    } = req.params;
 
-    if (token === undefined & !nonUserId) return res.json(response.successFalse(2700, "비회원 Id를 입력해주세요."));
+    if (token === undefined & nonUserId == 0) return res.json(response.successFalse(2700, "비회원 Id를 입력해주세요."));
 
     try {
         // 비회원
@@ -220,9 +220,9 @@ exports.missionHistory = async function (req, res) {
 
     const {
         nonUserId
-    } = req.body;
+    } = req.params;
 
-    if (token === undefined & !nonUserId) return res.json(response.successFalse(2700, "비회원 Id를 입력해주세요."));
+    if (token === undefined & nonUserId == 0) return res.json(response.successFalse(2700, "비회원 Id를 입력해주세요."));
 
     try {
         // 비회원

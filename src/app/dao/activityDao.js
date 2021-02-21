@@ -9,7 +9,7 @@ exports.getRecentRunning = async function (state, maxValue) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         let query = `
-        select sum(v.distance) as totalDistance
+        select ifnull(sum(v.distance), 0.00) as totalDistance
         from (select distinct startTime, endTime, distance
             from Running
             where ` + state + `
@@ -57,10 +57,12 @@ exports.getTotalRunning = async function (state) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select v.totalDay,
-            round(sum(r.distance), 2)              as totalDistance,
-            round(sum(r.distance) / v.totalDay, 2) as avgDistance,
+        select ifnull(v.totalDay, 0) as totalDay,
+            ifnull(round(sum(r.distance), 2), 0.00)              as totalDistance,
+            ifnull(round(sum(r.distance) / v.totalDay, 2), 0) as avgDistance,
             case
+                when sum(r.time) is null
+                    then '00:00'
                 when round(sum(r.time) / v.totalDay) < 60
                     then concat('00:', lpad(round(sum(r.time) / v.totalDay), 2, 0))
                 when round(sum(r.time) / v.totalDay) >= 60 and round(sum(r.time) / v.totalDay) < 3600
@@ -72,8 +74,8 @@ exports.getTotalRunning = async function (state) {
                                 lpad(round((sum(r.time) / v.totalDay) % 3600) % 60, 2, 0))
                 end
                                                     as avgTime,
-            round(sum(r.pace) / v.totalDay, 2)     as avgPace,
-            sum(r.calorie)                         as totalCalorie
+            ifnull(round(sum(r.pace) / v.totalDay, 2), 0.0)     as avgPace,
+            ifnull(sum(r.calorie), 0)                         as totalCalorie
         from (select distinct startTime, distance, pace, calorie, timestampdiff(second, startTime, endTime) as time
             from Running
             where ` + state + `
