@@ -81,18 +81,12 @@ exports.likeRunning = async function (req, res) {
     const {
         runningId
     } = req.params;
-    const {
-        challengeId
-    } = req.query;
 
     if (!runningId) return res.json(response.successFalse(2600, "러닝 번호를 입력해주세요."));
-    if (!challengeId) return res.json(response.successFalse(2601, "챌린지 번호를 입력해주세요."));
 
     try {
         const checkRows = await runningDao.checkRunningId(runningId);
-        const checkChallengeRows = await challengeDao.checkChallenge(challengeId);
         if (checkRows === 0) return res.json(response.successFalse(3600, "존재하지 않는 러닝입니다."));
-        if (checkChallengeRows === 0) return res.json(response.successFalse(3601, "존재하지 않는 챌린지입니다."));
 
         const existRows = await runningDao.checkRunningLike(userId, runningId);
         // 새로 좋아요 테이블에 삽입
@@ -107,18 +101,9 @@ exports.likeRunning = async function (req, res) {
             await runningDao.patchRunningLike(status, userId, runningId);
         }
 
-        const chattingRows = await chattingDao.getChatting(userId, challengeId);
+        const result = await runningDao.getLikeStatus(userId, runningId);
 
-        const first = chattingRows[0];
-        const second = chattingRows[1];
-        const third = chattingRows[2];
-
-        const chatting = [...first, ...second, ...third];
-
-        chatting.sort(function (a, b) { return a.compareTime - b.compareTime });
-        const resultRows = chatting.slice(-10);
-
-        return res.json(response.successTrue(1600, "러닝 좋아요 클릭에 성공하였습니다.", resultRows));
+        return res.json(response.successTrue(1600, "러닝 좋아요 클릭에 성공하였습니다.", {likeStatus: result}));
     } catch (err) {
         logger.error(`App - likeRunning Query error\n: ${err.message}`);
         return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
