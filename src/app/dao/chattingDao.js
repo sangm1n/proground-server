@@ -58,7 +58,7 @@ exports.getChatting = async function (userId, challengeId) {
         and c.userId != ?
         and u.isDeleted = 'N'
         and c.isDeleted = 'N'
-        order by c.parentChattingId, c.createdAt;
+        order by c.parentChattingId desc, c.createdAt desc;
         `;
         let params = [challengeId, challengeId, challengeId, userId];
         const [firstRows] = await connection.query(query, params);
@@ -114,40 +114,47 @@ exports.getChatting = async function (userId, challengeId) {
         and c.userId = ?
         and u.isDeleted = 'N'
         and c.isDeleted = 'N'
-        order by c.parentChattingId, c.createdAt;
+        order by c.parentChattingId desc, c.createdAt desc;
         `
         params = [challengeId, challengeId, challengeId, userId];
         const [secondRows] = await connection.query(query, params);
 
         query = `
         select distinct u.userId,
-            userName,
-            profileImage,
-            levelColor,
-            distance,
-            case
-                when timestampdiff(minute, startTime, endTime) < 1
-                    then concat('00:', lpad(concat(timestampdiff(second, startTime, endTime)), 2, 0))
-                when timestampdiff(minute, startTime, endTime) >= 1 and timestampdiff(minute, startTime, endTime) < 60
-                    then concat(lpad(concat(timestampdiff(minute, startTime, endTime)), 2, 0), ':',
-                                lpad(concat(timestampdiff(second, startTime, endTime) -
-                                            timestampdiff(minute, startTime, endTime) * 60), 2, 0))
-                when timestampdiff(minute, startTime, endTime) >= 60
-                    then concat(lpad(concat(timestampdiff(hour, startTime, endTime)), 2, 0), ':',
-                                lpad(concat(timestampdiff(minute, startTime, endTime) -
-                                            timestampdiff(hour, startTime, endTime) * 60), 2, 0), ':',
-                                lpad(concat(timestampdiff(second, startTime, endTime) -
-                                            timestampdiff(minute, startTime, endTime) * 60), 2, 0))
-                end as time,
-            pace,
-            ifnull(v.likeCount, 0) as likeCount,
-            date_format(endTime, '%Y.%m.%d %H:%i') as endTime,
-            r.createdAt as compareTime,
-            'C' as status
+                        r.runningId,
+                        userName,
+                        profileImage,
+                        levelColor,
+                        distance,
+                        case
+                            when timestampdiff(minute, startTime, endTime) < 1
+                                then concat('00:', lpad(concat(timestampdiff(second, startTime, endTime)), 2, 0))
+                            when timestampdiff(minute, startTime, endTime) >= 1 and
+                                timestampdiff(minute, startTime, endTime) < 60
+                                then concat(lpad(concat(timestampdiff(minute, startTime, endTime)), 2, 0), ':',
+                                            lpad(concat(timestampdiff(second, startTime, endTime) -
+                                                        timestampdiff(minute, startTime, endTime) * 60), 2, 0))
+                            when timestampdiff(minute, startTime, endTime) >= 60
+                                then concat(lpad(concat(timestampdiff(hour, startTime, endTime)), 2, 0), ':',
+                                            lpad(concat(timestampdiff(minute, startTime, endTime) -
+                                                        timestampdiff(hour, startTime, endTime) * 60), 2, 0), ':',
+                                            lpad(concat(timestampdiff(second, startTime, endTime) -
+                                                        timestampdiff(minute, startTime, endTime) * 60), 2, 0))
+                            end                                as time,
+                        pace,
+                        ifnull(v.likeCount, 0)                 as likeCount,
+                        ifnull(w.status, 'N')                  as likeStatus,
+                        date_format(endTime, '%Y.%m.%d %H:%i') as endTime,
+                        r.createdAt                            as compareTime,
+                        'C'                                    as status
         from User u
                 join UserLevel ul on u.userId = ul.userId
                 join Level l on ul.level = l.level
                 join Running r on u.userId = r.userId
+                left join (select runningId, status
+                            from RunningLike rl
+                                    join User u on rl.userId = u.userId
+                            where rl.userId = ?) w on r.runningId = w.runningId
                 left join (select r.runningId, count(likeId) as likeCount
                             from Running r
                                     join RunningLike rl on
@@ -158,9 +165,9 @@ exports.getChatting = async function (userId, challengeId) {
         where u.isDeleted = 'N'
         and r.isDeleted = 'N'
         and challengeId = ?
-        order by r.createdAt;
+        order by endTime desc;
         `
-        params = [challengeId];
+        params = [userId, challengeId];
         const [thirdRows] = await connection.query(query, params);
         
         query = `
