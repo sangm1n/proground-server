@@ -287,8 +287,8 @@ exports.postChallenge = async function (userId, challengeId, challengeColor) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        insert into UserChallenge (userId, challengeId, lastChattingId, challengeColor)
-        values (?, ?, -1, ?);
+        insert into UserChallenge (userId, challengeId, lastReadTime, challengeColor)
+        values (?, ?, null, ?);
         `;
         const params = [userId, challengeId, challengeColor];
         const [rows] = await connection.query(
