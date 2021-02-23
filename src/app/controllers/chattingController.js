@@ -45,10 +45,12 @@ exports.allChatting = async function (req, res) {
         chatting.sort(function (a, b) { return b.compareTime - a.compareTime });
         const resultRows = chatting.slice(page, size);
 
-        const lastReadTime = chatting.slice(0)[0].compareTime;
-        await chattingDao.patchLastChatting(lastReadTime, userId, challengeId);
-
+        if (resultRows.length > 1) {
+            const lastReadTime = chatting.slice(0)[0].compareTime;
+            await chattingDao.patchLastChatting(lastReadTime, userId, challengeId);
+        }
         if (resultRows.length === 0) return res.json(response.successTrue(1350, "아직 채팅 내용이 없습니다."));
+        
         return res.json(response.successTrue(1300, "해당 챌린지 채팅 조회에 성공하였습니다.", resultRows));
     } catch (err) {
         logger.error(`App - allChatting Query error\n: ${err.message}`);
