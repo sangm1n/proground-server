@@ -33,7 +33,7 @@ exports.getAllChallenges = async function (page, size) {
             minLevel,
             maxLevel,
             personnel,
-            concat(challengeName, ' with ', nickname) as challengeName,
+            if(challengeType = 'A', concat(challengeName, ' with ', nickname) ,challengeName) as challengeName,
             if(challengeType = 'A', '목표달성', '경쟁전')    as challengeType,
             distance,
             (endDate - startDate)                     as period
@@ -68,7 +68,7 @@ exports.getMyChallenge = async function (userId, page, size) {
             minLevel,
             maxLevel,
             if(challengeType = 'A', '목표달성', '경쟁전')      as challengeType,
-            concat(challengeName, ' with ', w.nickname) as challengeName,
+            if(challengeType = 'A', concat(challengeName, ' with ', w.nickname) ,challengeName) as challengeName,
             distance,
             v.userCount,
             personnel,
