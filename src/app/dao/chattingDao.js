@@ -169,12 +169,12 @@ exports.getChatting = async function (userId, challengeId) {
         `
         params = [userId, challengeId];
         let [thirdRows] = await connection.query(query, params);
-        
-        if (thirdRows.length > 0) {
-            query = `
-            select challengeColor from UserChallenge where userId = ? and challengeId = ? and isDeleted = 'N';
-            `
 
+        query = `
+        select challengeColor from UserChallenge where userId = ? and challengeId = ?;
+        `
+        
+        if (thirdRows.length > 0) { 
             for (var i = 0; i < thirdRows.length; i++) {
                 let userId = thirdRows[i].userId;
                 params = [userId, challengeId];

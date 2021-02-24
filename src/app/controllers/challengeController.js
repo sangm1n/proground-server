@@ -7,6 +7,7 @@ const secret_config = require('../../../config/secret');
 
 const challengeDao = require('../dao/challengeDao');
 const chattingDao = require('../dao/chattingDao');
+const runningDao = require('../dao/runningDao');
 let maxChallenge = 2;
 
 /***
@@ -133,10 +134,13 @@ exports.challengeInfo = async function (req, res) {
 exports.registerChallenge = async function (req, res) {
     const userId = req.verifiedToken.userId;
     const {challengeId} = req.params;
-    const {challengeColor} = req.body;
+    let {
+        challengeColor, challengeTeamName
+    } = req.body;
     
     if (!challengeId) return res.json(response.successFalse(2100, "챌린지 번호를 입력해주세요."));
     if (!challengeColor) return res.json(response.successFalse(2101, "챌린지 색상을 입력해주세요"));
+    if (!challengeTeamName) return res.json(response.successFalse(2102, "챌린지 팀 이름을 입력해주세요"));
 
     try {
         const checkRows = await challengeDao.checkChallenge(challengeId);
@@ -150,8 +154,11 @@ exports.registerChallenge = async function (req, res) {
 
         const checkLevelRows = await challengeDao.checkChallengeLevel(userId, challengeId);
         if (checkLevelRows === 0) return res.json(response.successFalse(3102, "레벨에 맞지 않는 챌린지입니다."));
+
+        const challengeType = await challengeDao.getChallengeType(challengeId);
+        if (challengeType === 'A') challengeTeamName = '목표';
         
-        await challengeDao.postChallenge(userId, challengeId, challengeColor);
+        await challengeDao.postChallenge(userId, challengeId, challengeColor, challengeTeamName);
         return res.json(response.successTrue(1030, "챌린지 참가에 성공하였습니다."));
     } catch (err) {
         logger.error(`App - registerChallenge Query error\n: ${err.message}`);
@@ -174,6 +181,8 @@ exports.outChallenge = async function (req, res) {
         if (checkRows === 0) return res.json(response.successFalse(3102, "이미 탈퇴한 챌린지입니다."));
 
         await challengeDao.withdrawChallenge(userId, challengeId);
+        await runningDao.deleteRunning(userId, challengeId);
+
         return res.json(response.successTrue(1031, "챌린지 탈퇴에 성공하였습니다."));
     } catch (err) {
         logger.error(`App - outChallenge Query error\n: ${err.message}`);
@@ -204,6 +213,8 @@ exports.challengeStatistic = async function (req, res) {
         const challengeType = await challengeDao.getChallengeType(challengeId);
 
         if (challengeType !== type) return res.json(response.successFalse(3100, "올바른 챌린지 타입이 아닙니다.")); 
+        const checkRegRows = await challengeDao.checkRegisterChallenge(userId, challengeId);
+        if (checkRegRows === 0) return res.json(response.successFalse(3101, "참가중인 챌린지가 아닙니다."));
         
         // 오늘
         if (status === 'today') {
@@ -259,6 +270,8 @@ exports.challengeGraph = async function (req, res) {
         const challengeType = await challengeDao.getChallengeType(challengeId);
 
         if (challengeType !== type) return res.json(response.successFalse(3100, "올바른 챌린지 타입이 아닙니다.")); 
+        const checkRegRows = await challengeDao.checkRegisterChallenge(userId, challengeId);
+        if (checkRegRows === 0) return res.json(response.successFalse(3101, "참가중인 챌린지가 아닙니다."));
 
         // 오늘
         if (status === 'today') {

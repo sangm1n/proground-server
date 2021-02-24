@@ -42,15 +42,15 @@ exports.allChatting = async function (req, res) {
 
         const chatting = [...first, ...second, ...third];
 
-        chatting.sort(function (a, b) { return b.compareTime - a.compareTime });
+        chatting.sort(function (a, b) { return a.compareTime - b.compareTime });
         const resultRows = chatting.slice(page, size);
 
         if (resultRows.length > 1) {
-            const lastReadTime = chatting.slice(0)[0].compareTime;
+            const lastReadTime = chatting[chatting.length-1].compareTime;
             await chattingDao.patchLastChatting(lastReadTime, userId, challengeId);
         }
         if (resultRows.length === 0) return res.json(response.successTrue(1350, "아직 채팅 내용이 없습니다."));
-        
+
         return res.json(response.successTrue(1300, "해당 챌린지 채팅 조회에 성공하였습니다.", resultRows));
     } catch (err) {
         logger.error(`App - allChatting Query error\n: ${err.message}`);
@@ -89,8 +89,8 @@ exports.makeChatting = async function (req, res) {
 
         const chatting = [...first, ...second, ...third];
 
-        chatting.sort(function (a, b) { return b.compareTime - a.compareTime });
-        const resultRows = chatting.slice(undefined, 10);
+        chatting.sort(function (a, b) { return a.compareTime - b.compareTime });
+        const resultRows = chatting.slice(10);
 
         return res.json(response.successTrue(1310, "해당 챌린지 채팅 생성에 성공하였습니다.", resultRows));
     } catch (err) {

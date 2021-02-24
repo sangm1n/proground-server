@@ -57,9 +57,9 @@ exports.getTotalRunning = async function (state) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select ifnull(v.totalDay, 0) as totalDay,
-            ifnull(round(sum(r.distance), 2), 0.00)              as totalDistance,
-            ifnull(round(sum(r.distance) / v.totalDay, 2), 0) as avgDistance,
+        select concat(ifnull(v.totalDay, 0), '일') as totalDay,
+            concat(ifnull(round(sum(r.distance), 2), 0.00), 'km')              as totalDistance,
+            if(round(sum(r.distance) / v.totalDay, 2) is null, '0km', concat(round(sum(r.distance) / v.totalDay, 2), 'km')) as avgDistance,
             case
                 when sum(r.time) is null
                     then '00:00'
@@ -72,10 +72,9 @@ exports.getTotalRunning = async function (state) {
                     then concat(lpad(round((sum(r.time) / v.totalDay) div 3600), 2, 0), ':',
                                 lpad(round((sum(r.time) / v.totalDay) % 3600) div 60, 2, 0), ':',
                                 lpad(round((sum(r.time) / v.totalDay) % 3600) % 60, 2, 0))
-                end
-                                                    as avgTime,
-            ifnull(round(sum(r.pace) / v.totalDay, 2), 0.0)     as avgPace,
-            ifnull(sum(r.calorie), 0)                         as totalCalorie
+                end     as avgTime,
+            if(round(sum(r.pace) / v.totalDay, 2) is null, '-''-', concat(left(cast(round(sum(r.pace) / v.totalDay, 2) as char), 1), '''', right(cast(round(sum(r.pace) / v.totalDay, 2) as char), 2)))       as avgPace,
+            concat(ifnull(sum(r.calorie), 0), 'kcal')                         as totalCalorie
         from (select distinct startTime, distance, pace, calorie, timestampdiff(second, startTime, endTime) as time
             from Running
             where ` + state + `
@@ -85,7 +84,7 @@ exports.getTotalRunning = async function (state) {
             where ` + state +`
                 and isDeleted = 'N') as v;
         `;
-        const [rows] = await connection.query(query);
+        let [rows] = await connection.query(query);
 
         connection.release();
 
@@ -102,24 +101,24 @@ exports.getRunningHistory = async function (state) {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
         select r.runningId,
-            distance,
+            concat(distance, 'km') as distance,
             case
                 when timestampdiff(minute, startTime, endTime) < 1
-                    then concat('00:', lpad(concat(timestampdiff(second, startTime, endTime)), 2, 0))
+                    then concat('시간 00:', lpad(concat(timestampdiff(second, startTime, endTime)), 2, 0))
                 when timestampdiff(minute, startTime, endTime) >= 1 and
                         timestampdiff(minute, startTime, endTime) < 60
-                    then concat(lpad(concat(timestampdiff(minute, startTime, endTime)), 2, 0), ':',
+                    then concat('시간 ', lpad(concat(timestampdiff(minute, startTime, endTime)), 2, 0), ':',
                                 lpad(concat(timestampdiff(second, startTime, endTime) -
                                             timestampdiff(minute, startTime, endTime) * 60), 2, 0))
                 when timestampdiff(minute, startTime, endTime) >= 60
-                    then concat(lpad(concat(timestampdiff(hour, startTime, endTime)), 2, 0), ':',
+                    then concat('시간 ', lpad(concat(timestampdiff(hour, startTime, endTime)), 2, 0), ':',
                                 lpad(concat(timestampdiff(minute, startTime, endTime) -
                                             timestampdiff(hour, startTime, endTime) * 60), 2, 0), ':',
                                 lpad(concat(timestampdiff(second, startTime, endTime) -
                                             timestampdiff(minute, startTime, endTime) * 60), 2, 0))
                 end                          as time,
-            pace,
-            calorie,
+            concat('페이스 ', left(cast(pace as char), 1), '''', right(cast(pace as char), 2)) as pace,
+            concat('소모 칼로리 ', calorie, 'kcal') as calorie,
             ifnull(v.likeCount, 0)           as likeCount,
             date_format(endTime, '%Y.%m.%d') as endTime
         from Running r

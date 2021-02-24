@@ -163,3 +163,45 @@ exports.patchRunningLike = async function (status, userId, runningId) {
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
+
+// 러닝 기록 삭제
+exports.deleteRunning = async function (userId, challengeId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        let query = `
+        select runningId from Running where userId = ? and challengeId = ? and isDeleted = 'N';
+        `;
+        let params = [userId, challengeId];
+        const [rows] = await connection.query(query, params);
+
+        exist = `
+        select exists(select runningId from RunningLike where runningId = ? and status = 'Y') as exist;
+        `
+        if (rows.length > 0) {
+            for (var i = 0; i < rows.length; i++) {
+                let runningId = rows[i].runningId;
+                let [check] = await connection.query(exist, [runningId]);
+
+                console.log(check[0]['exist'])
+
+                if (check[0]['exist'] === 1) {
+                    query = `
+                    update RunningLike set status = 'N' where runningId = ?;
+                    `;
+                    await connection.query(query, [runningId]);
+                }
+            }
+        }
+
+        query = `
+        update Running set isDeleted = 'Y' where userId = ? and challengeId = ?;
+        `;
+        params = [userId, challengeId];
+        await connection.query(query, params);
+
+        connection.release();
+    } catch (err) {
+        logger.error(`App - deleteRunning DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
