@@ -1,5 +1,6 @@
 const response = require('../../utils/response');
 const { pool } = require("../../../config/database");
+const {logger} = require('../../../config/winston');
 
 /***
  * 해당 챌린지 채팅 조회
@@ -62,6 +63,7 @@ exports.getChatting = async function (userId, challengeId) {
         `;
         let params = [challengeId, challengeId, challengeId, userId];
         const [firstRows] = await connection.query(query, params);
+        logger.info(`챌린지 ${challengeId}번 - 나를 제외한 사용자 채팅 조회 완료`)
 
         query = `
         select distinct c.chattingId,
@@ -118,6 +120,7 @@ exports.getChatting = async function (userId, challengeId) {
         `
         params = [challengeId, challengeId, challengeId, userId];
         const [secondRows] = await connection.query(query, params);
+        logger.info(`챌린지 ${challengeId}번 - 내가 쓴 채팅 조회 완료`)
 
         query = `
         select distinct u.userId,
@@ -169,6 +172,7 @@ exports.getChatting = async function (userId, challengeId) {
         `
         params = [userId, challengeId];
         let [thirdRows] = await connection.query(query, params);
+        logger.info(`챌린지 ${challengeId}번 - 러닝 기록 조회 완료`)
 
         query = `
         select challengeColor from UserChallenge where userId = ? and challengeId = ?;
@@ -290,7 +294,8 @@ exports.getChallengeId = async function (chattingId) {
 exports.getEachChatting = async function (chattingId, challengeType) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
-        let query, params;
+        let query;
+        const params = [chattingId];
 
         if (challengeType === 'A') {
             query = `
@@ -311,7 +316,7 @@ exports.getEachChatting = async function (chattingId, challengeType) {
                     join UserLevel ul on u.userId = ul.userId
                     join Level l on ul.level = l.level
                     join Chatting c on u.userId = c.userId
-                    join (select c.userId, c.challengeId, chattingId, challengeTeam, challengeColor
+                    join (select c.userId, c.challengeId, chattingId, challengeTeamName, challengeColor
                         from UserChallenge uc
                                     join Chatting c on uc.challengeId = c.challengeId
                         where challengeColor is not null
@@ -328,7 +333,7 @@ exports.getEachChatting = async function (chattingId, challengeType) {
                 u.userName,
                 u.profileImage,
                 l.levelColor,
-                v.challengeTeam,
+                v.challengeTeamName,
                 v.challengeColor,
                 c.message,
                 c.image,
@@ -342,7 +347,7 @@ exports.getEachChatting = async function (chattingId, challengeType) {
                     join UserLevel ul on u.userId = ul.userId
                     join Level l on ul.level = l.level
                     join Chatting c on u.userId = c.userId
-                    join (select c.userId, c.challengeId, chattingId, challengeTeam, challengeColor
+                    join (select c.userId, c.challengeId, chattingId, challengeTeamName, challengeColor
                         from UserChallenge uc
                                     join Chatting c on uc.challengeId = c.challengeId
                         where challengeColor is not null
@@ -353,7 +358,6 @@ exports.getEachChatting = async function (chattingId, challengeType) {
             order by c.createdAt;
             `;
         }
-        params = [chattingId];
         const [rows] = await connection.query(query, params);
         connection.release();
 
