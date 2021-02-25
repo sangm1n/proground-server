@@ -24,6 +24,25 @@ exports.checkUserEmail = async function (email) {
     }
 }
 
+exports.checkNonUserId = async function (nonUserId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select exists(select nonUserId from NonUser where nonUserId = ? and isDeleted = 'N') as exist;
+        `;
+        const params = [nonUserId];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+
+        return rows[0]['exist'];
+    } catch (err) {
+        logger.error(`App - checkUserEmail DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
 // 닉네임 체크
 exports.checkUserNickname = async function (nickname) {
     try {
@@ -45,13 +64,13 @@ exports.checkUserNickname = async function (nickname) {
 }
 
 // 사용자 정보 입력
-exports.postUserInfo = async function (name, email, password, nickname, height, weight, gender, loginStatus) {
+exports.postUserInfo = async function (name, email, password, nickname, height, weight, gender, loginStatus, fcmToken) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        insert into User (userName, email, password, nickname, height, weight, gender, loginStatus) values (?, ?, ?, ?, ?, ?, ?, ?);
+        insert into User (userName, email, password, nickname, height, weight, gender, loginStatus, fcmToken) values (?, ?, ?, ?, ?, ?, ?, ?, ?);
         `
-        const params = [name, email, password, nickname, height, weight, gender, loginStatus];
+        const params = [name, email, password, nickname, height, weight, gender, loginStatus, fcmToken];
         const [rows] = await connection.query(
             query, params
         );
@@ -80,12 +99,47 @@ exports.postUserAddInfo = async function (nickname, height, weight, gender, user
     }
 }
 
+// fcm 갱신
+exports.updateUserFcm = async function (fcmToken, userId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        update User set fcmToken = ? where userId = ?;
+        `
+        const params = [fcmToken, userId];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+    } catch (err) {
+        logger.error(`App - updateUserFcm DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.updateNonUserFcm = async function (fcmToken, nonUserId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        update NonUser set fcmToken = ? where nonUserId = ?;
+        `
+        const params = [fcmToken, nonUserId];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+    } catch (err) {
+        logger.error(`App - updateNonUserFcm DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
 // 카카오 회원가입 및 로그인
 exports.postUserInfoKakao = async function (name, email, nickname, height, weight, gender, profile_image) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        insert into User (userName, email, nickname, height, weight, gender, profileImage, loginStatus) values (?, ?, ?, ?, ?, ?, ?, "S");
+        insert into User (userName, email, nickname, height, weight, gender, profileImage, loginStatus, fcmToken) values (?, ?, ?, ?, ?, ?, ?, "S");
         `
         const params = [name, email, nickname, height, weight, gender, profile_image];
         const [rows] = await connection.query(

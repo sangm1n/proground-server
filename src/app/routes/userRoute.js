@@ -11,7 +11,7 @@ module.exports = function(app){
     app.route('/signup/check-email').post(user.checkEmail);
     app.route('/login').post(user.logIn);
     app.route('/login/kakao').post(user.logInKakao);
-    app.route('/login/auto').get(jwtMiddleware, user.check);
+    app.route('/login/auto').get(user.check);
 
     app.route('/user/profile').get(jwtMiddleware, user.profile);
     app.route('/user/profile').patch(jwtMiddleware, user.updateProfile);
@@ -21,6 +21,7 @@ module.exports = function(app){
     app.route('/user/level').get(jwtMiddleware, user.userLevel);
     app.route('/user/question').post(user.userQuestion);
     app.route('/non-user').post(user.nonUser);
+    app.route('/push').get(user.fcmPush);
 
     // 테스트용
     app.route('/image').post(s3.upload('/profile').single('img'));

@@ -17,6 +17,9 @@ const axios = require('axios');
 
 const s3 = require('../../utils/awsS3');
 const smtpTransport = require('../../../config/email');
+const admin = require('firebase-admin');
+let serAccount = require('../../../config/fcm-admin.json');
+
 
 /***
  * update : 2021-01-29
@@ -24,7 +27,7 @@ const smtpTransport = require('../../../config/email');
  */
 exports.signUp = async function (req, res) {
     const { 
-        name, email, password, nickname, height, weight, gender, loginStatus
+        name, email, password, nickname, height, weight, gender, loginStatus, fcmToken
     } = req.body;
     let status;
 
@@ -38,6 +41,7 @@ exports.signUp = async function (req, res) {
     if (!height) return res.json(response.successFalse(2042, "키를 입력해주세요."));
     if (!weight) return res.json(response.successFalse(2043, "몸무게를 입력해주세요."));
     if (!gender) return res.json(response.successFalse(2044, "성별을 입력해주세요."));
+    if (!fcmToken) return res.json(response.successFalse(2045, "fcmToken을 입력해주세요."));
     if (!loginStatus) status = 'G' 
     else status = loginStatus;
 
@@ -49,10 +53,10 @@ exports.signUp = async function (req, res) {
         if (nicknameRows === 1) return res.json(response.successFalse(3017, "이미 존재하는 닉네임입니다."));
 
         if (status == 'S') {
-            await userDao.postUserInfo(name, email, '', nickname, height, weight, gender, status);
+            await userDao.postUserInfo(name, email, '', nickname, height, weight, gender, status, fcmToken);
         } else if (status == 'G') {
             const hashedPassword = await crypto.createHash('sha512').update(password).digest('hex');
-            await userDao.postUserInfo(name, email, hashedPassword, nickname, height, weight, gender, status);
+            await userDao.postUserInfo(name, email, hashedPassword, nickname, height, weight, gender, status, fcmToken);
         }
         
         const userInfoRows = await userDao.getUserInfo(email);
@@ -169,8 +173,24 @@ exports.logIn = async function (req, res) {
  * JWT 검증 API
  */
 exports.check = async function (req, res) {
-    result = {userId: req.verifiedToken.userId}
-    return res.json(response.successTrue(1050, "JWT 검증에 성공하였습니다.", result));
+    let token = req.headers['x-access-token'] || req.query.token;
+    if (token) token = jwt.verify(token, secret_config.jwtsecret);
+
+    const {
+        fcmToken, nonUserId
+    } = req.body;
+
+    if (!fcmToken) return res.json(response.successFalse(2045, "fcmToken을 입력해주세요."));
+    if (token === undefined & !nonUserId) res.json(response.successTrue(1051, "처음 들어온 비회원입니다."));
+
+    if (token === undefined) {
+        await userDao.updateNonUserFcm(fcmToken, nonUserId);
+        return res.json(response.successTrue(1050, "JWT 검증에 성공하였습니다.", {nonUserId: nonUserId}));
+    } else {
+        const userId = token.userId;
+        await userDao.updateUserFcm(fcmToken, userId);
+        return res.json(response.successTrue(1050, "JWT 검증에 성공하였습니다.", {userId: userId}));
+    }
 };
 
 /***
@@ -236,6 +256,23 @@ exports.logInKakao = async function (req, res) {
  * update : 2021-01-31
  * 비밀번호 찾기 API
  */
+
+function createCode(numeric, alphabet, signal) {
+    var randomStr = "";
+
+    for (var j = 0; j < 2; j++) {
+        randomStr += numeric[Math.floor(Math.random()*numeric.length)];
+    }
+    for (var j = 0; j < 5; j++) {
+        randomStr += alphabet[Math.floor(Math.random()*alphabet.length)];
+    }
+    for (var j = 0; j < 1; j++) {
+        randomStr += signal[Math.floor(Math.random()*signal.length)];
+    }
+
+    return randomStr
+}
+
 exports.findPassword = async function (req, res) {
     const {
         email
@@ -244,7 +281,11 @@ exports.findPassword = async function (req, res) {
     if (!email) return res.json(response.successFalse(3090, "이메일을 입력해주세요."));
     
     try {
-        password = Math.random().toString(36).slice(6);
+        const numeric = "0,1,2,3,4,5,6,7,8,9".split(",");
+        const alphabet = "a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z".split(",");
+        const signal = "!,@,#,$".split(",");
+
+        const password = createCode(numeric, alphabet, signal);
         const hashedPassword = await crypto.createHash('sha512').update(password).digest('hex');
 
         const mailOptions = {
@@ -430,6 +471,39 @@ exports.nonUser = async function (req, res) {
         const nonUserRows = await userDao.postNonUser();
         
         return res.json(response.successTrue(1900, "비회원 생성에 성공하였습니다.", nonUserRows));
+    } catch (err) {
+        logger.error(`App - nonUser Query error\n: ${JSON.stringify(err)}`);
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+    }
+}
+
+admin.initializeApp({
+    credential: admin.credential.cert(serAccount)
+});
+
+/***
+ * update : 2021-02-22
+ * 푸쉬 알림
+ */
+exports.fcmPush = async function (req, res) {    
+    try {
+        let message = {
+            data: {
+                title: "테스트",
+                body: "안녕하세요",
+            },
+            token: "fP99LkhuQFKVCPdt_aTinA:APA91bGXXP-i3ae0VQT50EPjSRDsTOKXt3YjL72bXMurHFeegO_TM5Eari0e2aI_ZwTqqdi5GG0fAFg7EmHPVS1O60Mu_YvD6B8HUZ0i-CJEroCajQ3iYQ0X_fe2Ou0AcLBWpDuAtEgF"
+        };
+
+        admin
+            .messaging()
+            .send(message)
+            .then(function (response) {
+                console.log('성공 ! ', response);
+            })
+            .catch(function (err) {
+                console.log(err);
+            })
     } catch (err) {
         logger.error(`App - nonUser Query error\n: ${JSON.stringify(err)}`);
         return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
