@@ -22,6 +22,7 @@ module.exports = function(app){
     app.route('/user/question').post(user.userQuestion);
     app.route('/non-user').post(user.nonUser);
     app.route('/push').get(user.fcmPush);
+    app.route('/fcm').patch(user.updateFcm);
 
     // 테스트용
     app.route('/image').post(s3.upload('/profile').single('img'));

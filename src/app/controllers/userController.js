@@ -177,19 +177,23 @@ exports.check = async function (req, res) {
     if (token) token = jwt.verify(token, secret_config.jwtsecret);
 
     const {
-        fcmToken, nonUserId
+        nonUserId
     } = req.body;
 
-    if (!fcmToken) return res.json(response.successFalse(2045, "fcmToken을 입력해주세요."));
-    if (token === undefined & !nonUserId) res.json(response.successTrue(1051, "처음 들어온 비회원입니다."));
+    if (token === undefined & nonUserId === undefined) return res.json(response.successTrue(1051, "처음 들어온 비회원입니다."));
 
     if (token === undefined) {
-        await userDao.updateNonUserFcm(fcmToken, nonUserId);
-        return res.json(response.successTrue(1050, "JWT 검증에 성공하였습니다.", {nonUserId: nonUserId}));
+        const state = `nonUserId from NonUser where nonUserId = ${Number(nonUserId)}`;
+        const result = await userDao.getUserNonUser(state);
+
+        if (!result) return res.json(response.successFalse(4003, "JWT 검증에 실패하였습니다."));
+        else return res.json(response.successTrue(1050, "JWT 검증에 성공하였습니다.", {nonUserId: result.nonUserId}));
     } else {
-        const userId = token.userId;
-        await userDao.updateUserFcm(fcmToken, userId);
-        return res.json(response.successTrue(1050, "JWT 검증에 성공하였습니다.", {userId: userId}));
+        const state = `userId from User where userId = ${Number(token.userId)}`;
+        const result = await userDao.getUserNonUser(state);
+
+        if (!result) return res.json(response.successFalse(4003, "JWT 검증에 실패하였습니다."));
+        return res.json(response.successTrue(1050, "JWT 검증에 성공하였습니다.", {userId: result.userId}));
     }
 };
 
@@ -467,8 +471,12 @@ exports.userQuestion = async function (req, res) {
  * 비회원 생성 API
  */
 exports.nonUser = async function (req, res) {    
+    const {fcmToken} = req.body;
+    
+    if (!fcmToken) return res.json(response.successFalse(2900, "fcmToken을 입력해주세요."));
+
     try {
-        const nonUserRows = await userDao.postNonUser();
+        const nonUserRows = await userDao.postNonUser(fcmToken);
         
         return res.json(response.successTrue(1900, "비회원 생성에 성공하였습니다.", nonUserRows));
     } catch (err) {
@@ -506,6 +514,47 @@ exports.fcmPush = async function (req, res) {
             })
     } catch (err) {
         logger.error(`App - nonUser Query error\n: ${JSON.stringify(err)}`);
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+    }
+}
+
+/***
+ * update : 2021-02-26
+ * FCM 토큰 갱신 API
+ */
+exports.updateFcm = async function (req, res) {    
+    let token = req.headers['x-access-token'] || req.query.token;
+    const {fcmToken, nonUserId} = req.body;
+
+    if (token) token = jwt.verify(token, secret_config.jwtsecret);
+    if (fcmToken === undefined) return res.json(response.successFalse(2000, "fcmToken을 입력해주세요."));
+    if (token === undefined && nonUserId === undefined) return res.json(response.successFalse(2010, "회원이면 jwt를, 비회원이면 nonUserId를 입력해주세요."));
+    
+    try {
+        if (token === undefined) {
+            const state = `nonUserId from NonUser where nonUserId = ${Number(nonUserId)}`;
+            const result = await userDao.getUserNonUser(state);
+    
+            if (!result) return res.json(response.successFalse(3010, "존재하지 않는 비회원입니다."));
+            else {
+                const status = `NonUser set fcmToken = '${fcmToken}' where nonUserId = ${nonUserId}`;
+                await userDao.updateUserFcm(status);
+            }
+        } else {
+            const userId = token.userId;
+            const state = `userId from User where userId = ${Number(userId)}`;
+            const result = await userDao.getUserNonUser(state);
+    
+            if (!result) return res.json(response.successFalse(3000, "존재하지 않는 회원입니다."));
+            else {
+                const status = `User set fcmToken = '${fcmToken}' where userId = ${userId}`;
+                await userDao.updateUserFcm(status);
+            }
+        }
+        
+        return res.json(response.successTrue(1000, "fcm 토큰을 갱신하였습니다."));
+    } catch (err) {
+        logger.error(`App - updateFcm Query error\n: ${JSON.stringify(err)}`);
         return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
     }
 }

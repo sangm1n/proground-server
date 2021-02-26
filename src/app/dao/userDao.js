@@ -100,16 +100,13 @@ exports.postUserAddInfo = async function (nickname, height, weight, gender, user
 }
 
 // fcm 갱신
-exports.updateUserFcm = async function (fcmToken, userId) {
+exports.updateUserFcm = async function (state) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        update User set fcmToken = ? where userId = ?;
+        update ` + state + `;
         `
-        const params = [fcmToken, userId];
-        const [rows] = await connection.query(
-            query, params
-        );
+        await connection.query(query);
         connection.release();
     } catch (err) {
         logger.error(`App - updateUserFcm DB Connection error\n: ${err.message}`);
@@ -357,13 +354,14 @@ exports.postUserQuestion = async function (email, question) {
 }
 
 // 비회원 생성
-exports.postNonUser = async function () {
+exports.postNonUser = async function (fcmToken) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         let query = `
-        Insert into NonUser (isDeleted) values ('N');
+        Insert into NonUser (fcmToken) values (?);
         `;
-        await connection.query( query );
+        const params = [fcmToken];
+        await connection.query(query, params);
 
         query = `
         select nonUserId from NonUser where isDeleted = 'N' order by createdAt desc limit 1;
@@ -374,6 +372,22 @@ exports.postNonUser = async function () {
         return rows[0];
     } catch (err) {
         logger.error(`App - postNonUser DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+// 회원 or 비회원 체크
+exports.getUserNonUser = async function (state) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select ` + state + `;
+        `;
+        const [rows] = await connection.query(query);
+
+        return rows[0];
+    } catch (err) {
+        logger.error(`App - getUserNonUser DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
