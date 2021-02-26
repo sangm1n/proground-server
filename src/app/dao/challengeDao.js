@@ -744,7 +744,7 @@ exports.getGoalGraphToday = async function (userId, challengeId) {
         const [firstRows] = await connection.query(query, params);
 
         query = `
-        select r.challengeId, challengeTeamName, ifnull(w.distance, 0.00) as distance, cast(ifnull(sum(u.likeCount), 0) as unsigned) as likeCount
+        select r.challengeId, challengeColor, challengeTeamName, ifnull(w.distance, 0.00) as distance, cast(ifnull(sum(u.likeCount), 0) as unsigned) as likeCount
         from Running r
             join UserChallenge uc on r.challengeId = uc.challengeId
             left join (select r.runningId, count(likeId) as likeCount
@@ -807,6 +807,7 @@ exports.getGoalGraphTotal = async function (userId, challengeId) {
             ifnull(round(w.distance, 1), 0.00)                      as distance,
             cast(ifnull(sum(u.likeCount), 0) as unsigned) as likeCount
         from Running r
+                join User u
                 join Challenge c on r.challengeId = c.challengeId
                 join (select uc.userId, userName, uc.isDeleted, challengeTeamName, profileImage
                     from User u
@@ -828,7 +829,7 @@ exports.getGoalGraphTotal = async function (userId, challengeId) {
                     where challengeId = ?
                         and userId = ?
                         and isDeleted = 'N') w
-        where r.userId = ?
+        where u.userId = ?
         and r.challengeId = ?
         and r.isDeleted = 'N'
         and c.isDeleted = 'N'
@@ -839,13 +840,13 @@ exports.getGoalGraphTotal = async function (userId, challengeId) {
 
         query = `
         select c.challengeId,
-            challengeTeamName,
+            v.challengeColor, challengeTeamName,
             ifnull(round((w.distance / c.distance) * 100, 1), 0.00) as ratio,
             ifnull(round(w.distance, 1), 0.00)                      as distance,
             cast(ifnull(sum(u.likeCount), 0) as unsigned) as likeCount
         from Running r
                 join Challenge c on r.challengeId = c.challengeId
-                join (select uc.userId, userName, uc.isDeleted, challengeTeamName, profileImage
+                join (select uc.userId, userName, uc.isDeleted, challengeColor, challengeTeamName, profileImage
                     from User u
                                 join UserChallenge uc on u.userId = uc.userId
                     where u.isDeleted = 'N'
