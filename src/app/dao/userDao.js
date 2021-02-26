@@ -317,10 +317,12 @@ exports.getUserLevel = async function (userId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select level, profileImage
+        select ul.level, levelColor, profileImage
         from UserLevel ul
+                join Level l on ul.level = l.level
                 join User u on ul.userId = u.userId
-        where ul.userId = ? and u.isDeleted = 'N';
+        where ul.userId = ?
+        and u.isDeleted = 'N';
         `;
         const params = [userId];
         const [rows] = await connection.query(
@@ -330,7 +332,7 @@ exports.getUserLevel = async function (userId) {
 
         return rows[0];
     } catch (err) {
-        logger.error(`App - patchProfileImage DB Connection error\n: ${err.message}`);
+        logger.error(`App - getUserLevel DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
