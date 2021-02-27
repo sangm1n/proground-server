@@ -205,3 +205,37 @@ exports.deleteRunning = async function (userId, challengeId) {
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
+
+// 러닝 기록으로 runningId 받아오기
+exports.getRunningId = async function (state, distance, startTime, endTime, pace, altitude, calorie) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select runningId from Running where ` + state + ` and distance = ? and startTime = ? and endTime = ? and pace = ? and altitude = ? and calorie = ? and isDeleted = 'N';
+        `;
+        const params = [distance, startTime, endTime, pace, altitude, calorie];
+        const [rows] = await connection.query(query, params);
+        connection.release();
+
+        return rows;
+    } catch (err) {
+        logger.error(`App - getRunningId DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+// 러닝 구간 페이스 기록
+exports.postRunningSection = async function (runningId, distance, pace) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        insert into RunningSection (runningId, distance, pace) values (?, ?, ?);
+        `;
+        const params = [runningId, distance, pace];
+        await connection.query(query, params);
+        connection.release();
+    } catch (err) {
+        logger.error(`App - postRunningSection DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}

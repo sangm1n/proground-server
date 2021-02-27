@@ -16,7 +16,7 @@ const chattingDao = require('../dao/chattingDao');
 exports.recordRunning = async function (req, res) {
     let token = req.headers['x-access-token'] || req.query.token;
     const {
-        nonUserId, distance, startTime, endTime, pace, altitude, calorie
+        nonUserId, distance, startTime, endTime, pace, altitude, calorie, section
     } = req.body;
 
     if (token) token = jwt.verify(token, secret_config.jwtsecret);
@@ -26,12 +26,28 @@ exports.recordRunning = async function (req, res) {
     if (!endTime) return res.json(response.successFalse(2502, "러닝 종료 시간을 입력해주세요."));
     if (!pace) return res.json(response.successFalse(2503, "러닝 페이스를 입력해주세요."));
     if (!altitude) return res.json(response.successFalse(2504, "러닝 고도를 입력해주세요."));
-    if (!calorie) return res.json(response.successFalse(2505, "러닝 소모 칼로리를 입력해주세요."));
+    if (!calorie) return res.json(response.successFalse(2505, "러닝 소모 칼로리를 입력해주세요.")); 
 
     try {
         // 비회원
         if (token === undefined) {
             await runningDao.postRunning(-1, -1, nonUserId, distance, startTime, endTime, pace, altitude, calorie);
+            logger.info(`nonUserId ${nonUserId}번 러닝 기록 저장 완료`);
+
+            if (section !== undefined) {
+                const state = 'nonUserId = ' + nonUserId;
+                const runningIdRows = await runningDao.getRunningId(state, distance, startTime, endTime, pace, altitude, calorie);
+
+                for (var i = 0; i < runningIdRows.length; i++) {
+                    let runningId = runningIdRows[i].runningId;
+                    for (var j = 0; j < Object.keys(section[0]).length; j++) {
+                        let distance = parseFloat(Object.keys(section[0])[j]).toFixed(2);
+                        let pace = parseFloat(Object.values(section[0])[j]).toFixed(2);
+                        await runningDao.postRunningSection(runningId, distance, pace);
+                    }
+                }
+                logger.info(`nonUserId ${nonUserId}번 구간 페이스 저장 완료`);
+            }
             return res.json(response.successTrue(1501, "비회원 러닝 기록에 성공하였습니다."));
         // 회원
         } else {
@@ -47,6 +63,22 @@ exports.recordRunning = async function (req, res) {
                     await runningDao.postRunning(challengeId, userId, -1, distance, startTime, endTime, pace, altitude, calorie);
                 }
             }
+            logger.info(`userId ${userId}번 러닝 기록 저장 완료`);
+            
+            if (section !== undefined) {
+                const state = 'userId = ' + token.userId;
+                const runningIdRows = await runningDao.getRunningId(state, distance, startTime, endTime, pace, altitude, calorie);
+
+                for (var i = 0; i < runningIdRows.length; i++) {
+                    let runningId = runningIdRows[i].runningId;
+                    for (var j = 0; j < Object.keys(section[0]).length; j++) {
+                        let distance = parseFloat(Object.keys(section[0])[j]).toFixed(2);
+                        let pace = parseFloat(Object.values(section[0])[j]).toFixed(2);
+                        await runningDao.postRunningSection(runningId, distance, pace);
+                    }
+                }
+            }
+            logger.info(`userId ${userId}번 구간 페이스 저장 완료`);
             return res.json(response.successTrue(1500, "회원 러닝 기록에 성공하였습니다."));
         }
     } catch (err) {
