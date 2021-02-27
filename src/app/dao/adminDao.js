@@ -53,3 +53,58 @@ exports.insertChallenge = async function (challengeName, introduction, image, ch
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
+
+/***
+ * 미션 생성
+ */
+// 리더 체크
+exports.checkNickname = async function (nickname) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select exists (select userId from User where nickname = ? and userType = 'L' and isDeleted = 'N') as exist;
+        `;
+        const params = [nickname];
+        const [rows] = await connection.query(query, params);
+        connection.release();
+
+        return rows[0]['exist'];
+    } catch (err) {
+        logger.error(`App - checkNickname DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+// leaderId 조회
+exports.getLeaderId = async function (nickname) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select userId from User where nickname = ? and isDeleted = 'N';
+        `;
+        const params = [nickname];
+        const [rows] = await connection.query(query, params);
+        connection.release();
+
+        return rows[0]['userId'];
+    } catch (err) {
+        logger.error(`App - checkNickname DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+// 미션 생성
+exports.insertMission = async function (leaderId, distance, time, endDate) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        insert into Mission (leaderId, distance, time, endDate) values (?, ?, ?, ?); 
+        `;
+        const params = [leaderId, distance, time, endDate];
+        await connection.query(query, params);
+        connection.release();
+    } catch (err) {
+        logger.error(`App - insertMission DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
