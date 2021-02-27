@@ -90,7 +90,10 @@ exports.makeChatting = async function (req, res) {
         const chatting = [...first, ...second, ...third];
 
         chatting.sort(function (a, b) { return a.compareTime - b.compareTime });
-        const resultRows = chatting.slice(10);
+        const reverseChatting = chatting.reverse();
+        const limitChatting = reverseChatting.slice(0, 10);
+
+        const resultRows = limitChatting.reverse();
 
         return res.json(response.successTrue(1310, "해당 챌린지 채팅 생성에 성공하였습니다.", resultRows));
     } catch (err) {
@@ -106,21 +109,30 @@ exports.makeChatting = async function (req, res) {
 exports.eachChatting = async function (req, res) {
     const userId = req.verifiedToken.userId;
     const {chattingId} = req.params;
+    let {
+        page, size
+    } = req.query;
     
+    if (!page) return res.json(response.successFalse(2060, "페이지를 입력해주세요."));
+    if (!size) return res.json(response.successFalse(2070, "사이즈를 입력해주세요."));
+    if (page < 1) return res.json(response.successFalse(2061, "페이지 번호를 확인해주세요."));
     if (!chattingId) return res.json(response.successFalse(2200, "채팅 번호를 입력해주세요."));
 
     try {
+        page = size * (page - 1);
+        size = Number(page) + Number(size);
+
         const challengeId = await chattingDao.getChallengeId(chattingId);
         const challengeType = await challengeDao.getChallengeType(challengeId);
-        const chattingRows = await chattingDao.getEachChatting(chattingId, challengeType);
+        const chattingRows = await chattingDao.getEachChatting(chattingId, challengeType, page, size);
         logger.info(`채팅 ${chattingId}번 - 개별 채팅 조회 완료`);
 
         result = {
             chatting: chattingRows[0],
-            comments: chattingRows.slice(1, )
+            comments: chattingRows[1]
         }
 
-        if (chattingRows.slice(1, ).length < 1) return res.json(response.successTrue(1320, "채팅 대댓글이 아직 존재하지 않습니다.", {chatting: chattingRows[0]}));
+        if (chattingRows[1].length < 1) return res.json(response.successTrue(1320, "채팅 대댓글이 아직 존재하지 않습니다.", {chatting: chattingRows[0]}));
         else return res.json(response.successTrue(1310, "채팅 조회에 성공하였습니다.", result));
     } catch (err) {
         logger.error(`App - eachChatting Query error\n: ${err.message}`);
@@ -151,13 +163,16 @@ exports.makeComment = async function (req, res) {
         else await chattingDao.postChatting(challengeId, userId, message, req.files[0].location, chattingId);
 
         const challengeType = await challengeDao.getChallengeType(challengeId);
-        const chattingRows = await chattingDao.getEachChatting(chattingId, challengeType);
-        console.log(chattingRows);
+        const chattingRows = await chattingDao.getEachChatting(chattingId, challengeType, 0, Number.MAX_SAFE_INTEGER);
         logger.info(`채팅 ${chattingId}번 - 개별 채팅 조회 완료`);
+
+        const reverseChatting = chattingRows[1].reverse();
+        const limitChatting = reverseChatting.slice(0, 10);
+        const resultChatting = limitChatting.reverse();
 
         result = {
             chatting: chattingRows[0],
-            comments: chattingRows.slice(1, 10)
+            comments: resultChatting
         };
 
         return res.json(response.successTrue(1320, "채팅 답글 생성에 성공하였습니다.", result));

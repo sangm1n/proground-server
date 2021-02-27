@@ -291,12 +291,11 @@ exports.getChallengeId = async function (chattingId) {
 }
 
 // 개별 채팅 조회
-exports.getEachChatting = async function (chattingId, challengeType) {
+exports.getEachChatting = async function (chattingId, challengeType, page, size) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
-        let query;
-        const params = [chattingId];
-
+        
+        let query, params;
         if (challengeType === 'A') {
             query = `
             select distinct c.chattingId,
@@ -321,7 +320,7 @@ exports.getEachChatting = async function (chattingId, challengeType) {
                                     join Chatting c on uc.challengeId = c.challengeId
                         where challengeColor is not null
                         group by c.chattingId) v on c.chattingId = v.chattingId
-            where parentChattingId = ?
+            where parentChattingId = ? and c.chattingId = parentChattingId
             and u.isDeleted = 'N'
             and c.isDeleted = 'N'
             order by c.createdAt;
@@ -352,16 +351,84 @@ exports.getEachChatting = async function (chattingId, challengeType) {
                                     join Chatting c on uc.challengeId = c.challengeId
                         where challengeColor is not null
                         group by c.chattingId) v on c.chattingId = v.chattingId
-            where parentChattingId = ?
+            where parentChattingId = ? and c.chattingId = parentChattingId
             and u.isDeleted = 'N'
             and c.isDeleted = 'N'
             order by c.createdAt;
             `;
         }
-        const [rows] = await connection.query(query, params);
+        params = [chattingId];
+        const [parentChattingRows] = await connection.query(query, params);
+
+        if (challengeType === 'A') {
+            query = `
+            select distinct c.chattingId,
+                u.userId,
+                u.userName,
+                u.profileImage,
+                l.levelColor,
+                c.message,
+                c.image,
+                case
+                    when c.createdAt < date_format(now(), '%Y-%m-%d 00:00:00')
+                        then date_format(c.createdAt, '%m-%d %H:%i')
+                    when c.createdAt >= date_format(now(), '%Y-%m-%d 00:00:00')
+                        then date_format(c.createdAt, '%H:%i')
+                    end as createdAt
+            from User u
+                    join UserLevel ul on u.userId = ul.userId
+                    join Level l on ul.level = l.level
+                    join Chatting c on u.userId = c.userId
+                    join (select c.userId, c.challengeId, chattingId, challengeTeamName, challengeColor
+                        from UserChallenge uc
+                                    join Chatting c on uc.challengeId = c.challengeId
+                        where challengeColor is not null
+                        group by c.chattingId) v on c.chattingId = v.chattingId
+            where parentChattingId = ? and c.chattingId != parentChattingId
+            and u.isDeleted = 'N'
+            and c.isDeleted = 'N'
+            order by c.createdAt
+            limit ?, ?;
+            `;
+        } else {
+            query = `
+            select distinct c.chattingId,
+                u.userId,
+                u.userName,
+                u.profileImage,
+                l.levelColor,
+                v.challengeTeamName,
+                v.challengeColor,
+                c.message,
+                c.image,
+                case
+                    when c.createdAt < date_format(now(), '%Y-%m-%d 00:00:00')
+                        then date_format(c.createdAt, '%m-%d %H:%i')
+                    when c.createdAt >= date_format(now(), '%Y-%m-%d 00:00:00')
+                        then date_format(c.createdAt, '%H:%i')
+                    end as createdAt
+            from User u
+                    join UserLevel ul on u.userId = ul.userId
+                    join Level l on ul.level = l.level
+                    join Chatting c on u.userId = c.userId
+                    join (select c.userId, c.challengeId, chattingId, challengeTeamName, challengeColor
+                        from UserChallenge uc
+                                    join Chatting c on uc.challengeId = c.challengeId
+                        where challengeColor is not null
+                        group by c.chattingId) v on c.chattingId = v.chattingId
+            where parentChattingId = ? and c.chattingId != parentChattingId
+            and u.isDeleted = 'N'
+            and c.isDeleted = 'N'
+            order by c.createdAt
+            limit ?, ?;
+            `;
+        }
+        params = [chattingId, page, size];
+        const [childChattingRows] = await connection.query(query, params);
+
         connection.release();
 
-        return rows;
+        return [parentChattingRows[0], childChattingRows];
     } catch (err) {
         logger.error(`App - getEachChatting DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
