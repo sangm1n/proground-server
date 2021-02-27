@@ -374,7 +374,7 @@ exports.getStatsInfo = async function (challengeId, page, size) {
             v.profileImage,
             v.levelColor,
             v.challengeTeamName,
-            distance,
+            cast(distance as double) as distance,
             ifnull(w.likeCount, 0) as likeCount
         from Running r
                 join (select uc.userId, userName, x.levelColor, uc.isDeleted, challengeTeamName, profileImage
@@ -421,7 +421,7 @@ exports.getGoalStatsInfo = async function (challengeId, page, size) {
             v.userName,
             v.profileImage,
             v.levelColor,
-            distance,
+            cast(distance as double) as distance,
             ifnull(w.likeCount, 0) as likeCount
         from Running r
                 join (select uc.userId, userName, x.levelColor, uc.isDeleted, challengeTeamName, profileImage
@@ -470,7 +470,7 @@ exports.getStatsTotalInfo = async function (challengeId, page, size) {
             v.profileImage,
             v.levelColor,
             v.challengeTeamName,
-            distance,
+            cast(distance as double) as distance,
             if(w.likeCount is null, 0, w.likeCount) as likeCount
         from Running r
                 join (select uc.userId, userName, x.levelColor, uc.isDeleted, challengeTeamName, profileImage
@@ -515,7 +515,7 @@ exports.getGoalStatsTotalInfo = async function (challengeId, page, size) {
             v.userName,
             v.profileImage,
             v.levelColor,
-            distance,
+            cast(distance as double) as distance,
             if(w.likeCount is null, 0, w.likeCount) as likeCount
         from Running r
                 join (select uc.userId, userName, x.levelColor, uc.isDeleted, challengeTeamName, profileImage
@@ -572,7 +572,7 @@ exports.getCompetitionGraphToday = async function (challengeId) {
         query = `
         select ifnull(challengeColor, '` + firstColor + `') as challengeColor,
                 ifnull(challengeTeamName, '` + firstTeam + `') as challengeTeamName,
-                ifnull(sum(distance), 0) as totalDistance
+                cast(ifnull(sum(distance), 0) as double) as totalDistance
         from Running r
                 join UserChallenge uc on r.userId = uc.userId
         where r.challengeId = ?
@@ -588,7 +588,7 @@ exports.getCompetitionGraphToday = async function (challengeId) {
         query = `
         select ifnull(challengeColor, '` + secondColor + `') as challengeColor,
                 ifnull(challengeTeamName, '` + secondTeam + `') as challengeTeamName,
-                ifnull(sum(distance), 0) as totalDistance
+                cast(ifnull(sum(distance), 0) as double) as totalDistance
         from Running r
                 join UserChallenge uc on r.userId = uc.userId
         where r.challengeId = ?
@@ -613,8 +613,8 @@ exports.getCompetitionGraphToday = async function (challengeId) {
         const firstRatio = ((firstDist / maximum) * 100).toFixed(2);
         const secondRatio = ((secondDist / maximum) * 100).toFixed(2);
 
-        firstRows[0].ratio = firstRatio;
-        secondRows[0].ratio = secondRatio;
+        firstRows[0].ratio = parseFloat(firstRatio);
+        secondRows[0].ratio = parseFloat(secondRatio);
 
         connection.release();
 
@@ -645,7 +645,7 @@ exports.getCompetitionGraphTotal = async function (challengeId) {
         query = `
         select ifnull(challengeColor, '` + firstColor + `') as challengeColor,
                 ifnull(challengeTeamName, '` + firstTeam + `') as challengeTeamName,
-                ifnull(sum(distance), 0) as totalDistance
+                cast(ifnull(sum(distance), 0) as double) as totalDistance
         from Running r
                 join UserChallenge uc on r.userId = uc.userId
         where r.challengeId = ?
@@ -659,7 +659,7 @@ exports.getCompetitionGraphTotal = async function (challengeId) {
         query = `
         select ifnull(challengeColor, '` + secondColor + `') as challengeColor,
                 ifnull(challengeTeamName, '` + secondTeam + `') as challengeTeamName,
-                ifnull(sum(distance), 0) as totalDistance
+                cast(ifnull(sum(distance), 0) as double) as totalDistance
         from Running r
                 join UserChallenge uc on r.userId = uc.userId
         where r.challengeId = ?
@@ -682,8 +682,8 @@ exports.getCompetitionGraphTotal = async function (challengeId) {
         const firstRatio = ((firstDist / maximum) * 100).toFixed(2);
         const secondRatio = ((secondDist / maximum) * 100).toFixed(2);
 
-        firstRows[0].ratio = firstRatio;
-        secondRows[0].ratio = secondRatio;
+        firstRows[0].ratio = parseFloat(firstRatio);
+        secondRows[0].ratio = parseFloat(secondRatio);
 
         connection.release();
 
@@ -702,8 +702,8 @@ exports.getGoalGraphToday = async function (userId, challengeId) {
             v.userName, 
             v.profileImage, 
             v.levelColor, 
-            ifnull(w.distance, 0.00) as distance, 
-            cast(ifnull(sum(u.likeCount), 0) as unsigned) as likeCount
+            cast(ifnull(w.distance, 0.00) as double) as distance, 
+            cast(ifnull(sum(u.likeCount), 0) as double) as likeCount
         from Running r
             join User u
             join (select uc.userId, userName, x.levelColor, uc.isDeleted, challengeTeamName, profileImage
@@ -744,7 +744,7 @@ exports.getGoalGraphToday = async function (userId, challengeId) {
         const [firstRows] = await connection.query(query, params);
 
         query = `
-        select r.challengeId, challengeColor, challengeTeamName, ifnull(w.distance, 0.00) as distance, cast(ifnull(sum(u.likeCount), 0) as unsigned) as likeCount
+        select r.challengeId, challengeColor, challengeTeamName, cast(ifnull(w.distance, 0.00) as double) as distance, cast(ifnull(sum(u.likeCount), 0) as double) as likeCount
         from Running r
             join UserChallenge uc on r.challengeId = uc.challengeId
             left join (select r.runningId, count(likeId) as likeCount
@@ -784,8 +784,8 @@ exports.getGoalGraphToday = async function (userId, challengeId) {
         const firstRatio = ((firstDist / userMax) * 100).toFixed(2);
         const secondRatio = ((secondDist / teamMax) * 100).toFixed(2);
 
-        firstRows[0].ratio = firstRatio;
-        secondRows[0].ratio = secondRatio;
+        firstRows[0].ratio = parseFloat(firstRatio);
+        secondRows[0].ratio = parseFloat(secondRatio);
 
         connection.release();
 
@@ -803,9 +803,9 @@ exports.getGoalGraphTotal = async function (userId, challengeId) {
         let query = `
         select r.userId,
             v.userName,
-            ifnull(round((w.distance / c.distance) * 100, 1), 0.00) as ratio,
-            ifnull(round(w.distance, 1), 0.00)                      as distance,
-            cast(ifnull(sum(u.likeCount), 0) as unsigned) as likeCount
+            cast(ifnull(round((w.distance / c.distance) * 100, 1), 0.00) as double) as ratio,
+            cast(ifnull(round(w.distance, 1), 0.00) as double)                      as distance,
+            cast(ifnull(sum(u.likeCount), 0) as double) as likeCount
         from Running r
                 join User u
                 join Challenge c on r.challengeId = c.challengeId
@@ -841,9 +841,9 @@ exports.getGoalGraphTotal = async function (userId, challengeId) {
         query = `
         select c.challengeId,
             v.challengeColor, challengeTeamName,
-            ifnull(round((w.distance / c.distance) * 100, 1), 0.00) as ratio,
-            ifnull(round(w.distance, 1), 0.00)                      as distance,
-            cast(ifnull(sum(u.likeCount), 0) as unsigned) as likeCount
+            cast(ifnull(round((w.distance / c.distance) * 100, 1), 0.00) as double) as ratio,
+            cast(ifnull(round(w.distance, 1), 0.00) as double)                   as distance,
+            cast(ifnull(sum(u.likeCount), 0) as double) as likeCount
         from Running r
                 join Challenge c on r.challengeId = c.challengeId
                 join (select uc.userId, userName, uc.isDeleted, challengeColor, challengeTeamName, profileImage
@@ -885,8 +885,8 @@ exports.getGoalGraphTotal = async function (userId, challengeId) {
         const firstRatio = ((firstDist / userMax) * 100).toFixed(2);
         const secondRatio = ((secondDist / teamMax) * 100).toFixed(2);
 
-        firstRows[0].ratio = firstRatio;
-        secondRows[0].ratio = secondRatio;
+        firstRows[0].ratio = parseFloat(firstRatio);
+        secondRows[0].ratio = parseFloat(secondRatio);
 
         connection.release();
         return [firstRows[0], secondRows[0]];

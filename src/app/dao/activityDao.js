@@ -9,7 +9,7 @@ exports.getRecentRunning = async function (state, maxValue) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         let query = `
-        select ifnull(sum(v.distance), 0.00) as totalDistance
+        select cast(ifnull(sum(v.distance), 0.00) as double) as totalDistance
         from (select distinct startTime, endTime, distance
             from Running
             where ` + state + `
@@ -21,8 +21,8 @@ exports.getRecentRunning = async function (state, maxValue) {
         const [firstRows] = await connection.query(query);
 
         query = `
-        select ifnull(sum(v.distance), 0.00) as distance,
-            ifnull(round((sum(v.distance) / ` + maxValue + `) * 100, 2), 0.00) as ratio,
+        select cast(ifnull(sum(v.distance), 0.00) as double) as distance,
+            cast(ifnull(round((sum(v.distance) / ` + maxValue + `) * 100, 2), 0.00) as double) as ratio,
             if(date_format(w.date, '%c/%e') = date_format(now(), '%c/%e'), 'Today', date_format(w.date, '%c/%e')) as date
         from (select distinct startTime, endTime, distance
             from Running
@@ -90,7 +90,7 @@ exports.getTotalRunning = async function (state) {
 
         return rows;
     } catch (err) {
-        logger.error(`App - getRecentRunning DB Connection error\n: ${err.message}`);
+        logger.error(`App - getTotalRunning DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
@@ -187,7 +187,7 @@ exports.getChallengeHistory = async function (userId, page, size) {
             minLevel,
             maxLevel,
             c.distance,
-            v.distance                                  as totalDistance,
+            cast(v.distance as double)                       as totalDistance,
             if(challengeType = 'A', '목표달성', '경쟁전')      as challengeType,
             date_format(startDate, '%y.%m.%d')          as startDate,
             date_format(endDate, '%y.%m.%d')            as endDate
@@ -227,7 +227,7 @@ exports.getRecommendedMission = async function (userId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select m.missionId, distance, time, leaderId, nickname, timestampdiff(day, now(), endDate) + 1 as date
+        select m.missionId, cast(distance as double) as distance, time, leaderId, nickname, timestampdiff(day, now(), endDate) + 1 as date
         from Mission m
                 join UserMission um on m.missionId = um.missionId
                 join User u on m.leaderId = u.userId
@@ -273,7 +273,7 @@ exports.getMissionHistory = async function (userId) {
         let [rows] = await connection.query(query, params);
 
         query = `
-        select m.missionId, distance, time, pace, date_format(um.updatedAt, '%Y-%m-%d') as updatedAt
+        select m.missionId, cast(distance as double) as distance, time, cast(pace as double) as pace, date_format(um.updatedAt, '%Y-%m-%d') as updatedAt
         from Mission m
                 join UserMission um on m.missionId = um.missionId
                 join User u on m.leaderId = u.userId

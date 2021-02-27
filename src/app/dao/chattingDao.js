@@ -128,7 +128,7 @@ exports.getChatting = async function (userId, challengeId) {
                         userName,
                         profileImage,
                         levelColor,
-                        distance,
+                        cast(distance as double) as distance,
                         case
                             when timestampdiff(minute, startTime, endTime) < 1
                                 then concat('00:', lpad(concat(timestampdiff(second, startTime, endTime)), 2, 0))
@@ -144,7 +144,7 @@ exports.getChatting = async function (userId, challengeId) {
                                             lpad(concat(timestampdiff(second, startTime, endTime) -
                                                         timestampdiff(minute, startTime, endTime) * 60), 2, 0))
                             end                                as time,
-                        pace,
+                        cast(pace as double) as pace,
                         ifnull(v.likeCount, 0)                 as likeCount,
                         ifnull(w.status, 'N')                  as likeStatus,
                         date_format(endTime, '%Y.%m.%d %H:%i') as endTime,
