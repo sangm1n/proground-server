@@ -175,9 +175,8 @@ exports.getChatting = async function (userId, challengeId) {
         logger.info(`챌린지 ${challengeId}번 - 러닝 기록 조회 완료`)
 
         query = `
-        select challengeColor from UserChallenge where userId = ? and challengeId = ?;
+        select challengeColor, challengeTeamName from UserChallenge where userId = ? and challengeId = ? and isDeleted = 'N';
         `
-        
         if (thirdRows.length > 0) { 
             for (var i = 0; i < thirdRows.length; i++) {
                 let userId = thirdRows[i].userId;
@@ -185,6 +184,7 @@ exports.getChatting = async function (userId, challengeId) {
                 let [rows] = await connection.query(query, params);
 
                 thirdRows[i].challengeColor = rows[0].challengeColor;
+                thirdRows[i].challengeTeamName = rows[0].challengeTeamName;
             }
         }
 

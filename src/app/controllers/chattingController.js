@@ -150,7 +150,17 @@ exports.makeComment = async function (req, res) {
         if (req.files.length < 1) await chattingDao.postChatting(challengeId, userId, message, undefined, chattingId);
         else await chattingDao.postChatting(challengeId, userId, message, req.files[0].location, chattingId);
 
-        return res.json(response.successTrue(1320, "채팅 답글 생성에 성공하였습니다."));
+        const challengeType = await challengeDao.getChallengeType(challengeId);
+        const chattingRows = await chattingDao.getEachChatting(chattingId, challengeType);
+        console.log(chattingRows);
+        logger.info(`채팅 ${chattingId}번 - 개별 채팅 조회 완료`);
+
+        result = {
+            chatting: chattingRows[0],
+            comments: chattingRows.slice(1, 10)
+        };
+
+        return res.json(response.successTrue(1320, "채팅 답글 생성에 성공하였습니다.", result));
     } catch (err) {
         logger.error(`App - makeComment Query error\n: ${err.message}`);
         return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
