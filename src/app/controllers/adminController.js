@@ -147,9 +147,39 @@ exports.modifyLevel = async function (req, res) {
             logger.info(`레벨 ${level} 조정 완료`);
         }
 
-        return res.json(response.successTrue(1000, "레벨 조정에 완료하였습니다."));
+        return res.json(response.successTrue(1000, "레벨 조정에 성공하였습니다."));
     } catch (err) {
         logger.error(`App - modifyLevel Query error\n: ${err.message}`);
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+    }
+}
+
+/***
+ * update : 2021-02-27
+ * 공지 생성 API
+ */
+exports.createNotice = async function (req, res) {
+    const userId = req.verifiedToken.userId;
+    const {
+        title, content
+    } = req.body;
+
+    if (!title) return res.json(response.successFalse(2000, "공지 제목을 입력해주세요."));
+    if (!content) return res.json(response.successFalse(2010, "공지 내용을 입력해주세요."));
+    
+    try {
+        const checkRows = await adminDao.checkAdmin(userId);
+        if (checkRows === 0) return res.json(response.successFalse(3000, "관리자가 아닙니다."));
+
+        if (req.file) {
+            const image = req.file.location;
+            await adminDao.postNotice(title, content, image);
+        } else await adminDao.postNotice(title, content, null);
+        logger.info('공지 생성 완료');
+
+        return res.json(response.successTrue(1000, "공지 생성에 성공하였습니다."));
+    } catch (err) {
+        logger.error(`App - createNotice Query error\n: ${err.message}`);
         return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
     }
 }

@@ -156,3 +156,21 @@ exports.changeLevelColor = async function (level, levelColor) {
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
+
+/***
+ * 공지 생성
+ */
+exports.postNotice = async function (title, content, image) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        insert into Notice (title, content, image) values (?, ?, ?);
+        `;
+        const params = [title, content, image];
+        await connection.query(query, params);
+        connection.release();
+    } catch (err) {
+        logger.error(`App - postNotice DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
