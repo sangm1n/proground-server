@@ -9,7 +9,7 @@ exports.getChatting = async function (userId, challengeId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         let query = `
-        select distinct c.chattingId,
+        select distinct c.chattingId, uc.challengeTeamName,
             ifnull(v.countChatting, 0) as more,
             u.userId,
             u.userName,
@@ -32,6 +32,7 @@ exports.getChatting = async function (userId, challengeId) {
                 join UserLevel ul on u.userId = ul.userId
                 join Level l on ul.level = l.level
                 join Chatting c on u.userId = c.userId
+                join UserChallenge uc on c.challengeId = uc.challengeId and c.userId = uc.userId
                 join (select userId, chattingId, count(chattingId) - 1 as countChatting
                     from Chatting c
                     where challengeId = ?
@@ -55,7 +56,7 @@ exports.getChatting = async function (userId, challengeId) {
                             and c.isDeleted = 'N'
                             and c.chattingId != c.parentChattingId
                             group by parentChattingId) w on w.parentChattingId = c.chattingId
-        where challengeId = ?
+        where c.challengeId = ?
         and c.userId != ?
         and u.isDeleted = 'N'
         and c.isDeleted = 'N'
@@ -175,7 +176,7 @@ exports.getChatting = async function (userId, challengeId) {
         logger.info(`챌린지 ${challengeId}번 - 러닝 기록 조회 완료`)
 
         query = `
-        select challengeColor, challengeTeamName from UserChallenge where userId = ? and challengeId = ? and isDeleted = 'N';
+        select challengeColor from UserChallenge where userId = ? and challengeId = ? and isDeleted = 'N';
         `
         if (thirdRows.length > 0) { 
             for (var i = 0; i < thirdRows.length; i++) {
@@ -184,7 +185,6 @@ exports.getChatting = async function (userId, challengeId) {
                 let [rows] = await connection.query(query, params);
 
                 thirdRows[i].challengeColor = rows[0].challengeColor;
-                thirdRows[i].challengeTeamName = rows[0].challengeTeamName;
             }
         }
 

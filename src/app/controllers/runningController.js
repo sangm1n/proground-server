@@ -113,8 +113,12 @@ exports.likeRunning = async function (req, res) {
     const {
         runningId
     } = req.params;
+    const {
+        isLiked
+    } = req.body;
 
     if (!runningId) return res.json(response.successFalse(2600, "러닝 번호를 입력해주세요."));
+    if (!isLiked) return res.json(response.successFalse(2601, "좋아요 클릭 여부를 입력해주세요."));
 
     try {
         const checkRows = await runningDao.checkRunningId(runningId);
@@ -126,11 +130,7 @@ exports.likeRunning = async function (req, res) {
             await runningDao.insertRunningLike(userId, runningId);
         // 수정
         } else {
-            let status = await runningDao.getLikeStatus(userId, runningId);
-            if (status === 'Y') status = 'N';
-            else status = 'Y';
-
-            await runningDao.patchRunningLike(status, userId, runningId);
+            await runningDao.patchRunningLike(isLiked, userId, runningId);
         }
 
         const result = await runningDao.getLikeStatus(userId, runningId);
