@@ -108,3 +108,51 @@ exports.insertMission = async function (leaderId, distance, time, endDate) {
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
+
+// maxDistance 변경
+exports.changeMaxDistance = async function (level, maxDistance) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        update Level set maxDistance = ? where level = ?;
+        `;
+        const params = [maxDistance, level];
+        await connection.query(query, params);
+        connection.release();
+    } catch (err) {
+        logger.error(`App - changeMaxDistance DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+// maxCard 변경
+exports.changeMaxCard = async function (level, maxCard) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        update Level set maxCard = ? where level = ?;
+        `;
+        const params = [maxCard, level];
+        await connection.query(query, params);
+        connection.release();
+    } catch (err) {
+        logger.error(`App - changeMaxCard DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+// levelColor 변경
+exports.changeLevelColor = async function (level, levelColor) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        update Level set levelColor = ? where level = ?;
+        `;
+        const params = [levelColor, level];
+        await connection.query(query, params);
+        connection.release();
+    } catch (err) {
+        logger.error(`App - changeLevelColor DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
