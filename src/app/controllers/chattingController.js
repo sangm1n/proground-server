@@ -7,6 +7,7 @@ const challengeDao = require('../dao/challengeDao');
 
 const s3 = require('../../utils/awsS3');
 const multer = require('multer');
+const notification = require('../../utils/notification');
 
 /***
  * update : 2021-02-10
@@ -162,6 +163,9 @@ exports.makeComment = async function (req, res) {
         if (req.files.length < 1) await chattingDao.postChatting(challengeId, userId, message, undefined, chattingId);
         else await chattingDao.postChatting(challengeId, userId, message, req.files[0].location, chattingId);
 
+        const tmpRows = await chattingDao.getFcmByChattingId(chattingId);
+        notification(`똑똑! ${tmpRows.nickname} 님의 채팅에 댓글💬 이 달렸어요!`, '', tmpRows.fcmToken);
+
         const challengeType = await challengeDao.getChallengeType(challengeId);
         const chattingRows = await chattingDao.getEachChatting(chattingId, challengeType, 0, Number.MAX_SAFE_INTEGER);
         logger.info(`채팅 ${chattingId}번 - 개별 채팅 조회 완료`);
@@ -202,4 +206,4 @@ exports.chattingImage = async function (req, res) {
         logger.error(`App - chattingImage Query error\n: ${err.message}`);
         return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
     }
-}
+};

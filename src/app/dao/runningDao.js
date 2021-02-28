@@ -239,3 +239,25 @@ exports.postRunningSection = async function (runningId, distance, pace) {
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
+
+exports.getFcmByRunningId = async function (runningId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select nickname, fcmToken
+        from Running r join User u on r.userId = u.userId
+        where runningId = ?
+        and r.isDeleted = 'N' and u.isDeleted = 'N';
+        `;
+        const params = [runningId];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+
+        return rows[0];
+    } catch (err) {
+        logger.error(`App - getFcmByRunningId DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}

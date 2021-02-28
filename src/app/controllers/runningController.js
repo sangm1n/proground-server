@@ -8,6 +8,7 @@ const secret_config = require('../../../config/secret');
 const runningDao = require('../dao/runningDao');
 const challengeDao = require('../dao/challengeDao');
 const chattingDao = require('../dao/chattingDao');
+const notification = require('../../utils/notification');
 
 /***
  * update : 2021-02-15
@@ -132,6 +133,10 @@ exports.likeRunning = async function (req, res) {
         } else {
             await runningDao.patchRunningLike(isLiked, userId, runningId);
         }
+        logger.info(`${runningId}번 러닝에 좋아요 클릭 완료`);
+
+        const tmpRows = await runningDao.getFcmByRunningId(runningId);
+        notification(`짝짝짝! 누군가 ${tmpRows.nickname} 님의 러닝을 응원🎉 했어요!`, '', tmpRows.fcmToken);
 
         const result = await runningDao.getLikeStatus(userId, runningId);
 

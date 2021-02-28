@@ -3,6 +3,8 @@ const {logger} = require('../../../config/winston');
 const response = require('../../utils/response');
 
 const adminDao = require('../dao/adminDao');
+const userDao = require('../dao/userDao');
+const notification = require('../../utils/notification');
 
 /***
  * update : 2021-02-25
@@ -176,6 +178,16 @@ exports.createNotice = async function (req, res) {
             await adminDao.postNotice(title, content, image);
         } else await adminDao.postNotice(title, content, null);
         logger.info('공지 생성 완료');
+
+        const userFcmRows = await userDao.getAllUser();
+        const nonUserFcmRows = await userDao.getAllNonUser();    
+        const totalFcmRows = [...userFcmRows, ...nonUserFcmRows];
+        
+        for (var i = 0; i < totalFcmRows.length; i++) {
+            if (totalFcmRows[i].fcmToken !== null) {
+                notification('띵동! 새로운 소식💌 이 도착했어요!', '', totalFcmRows[i].fcmToken);
+            }
+        }
 
         return res.json(response.successTrue(1000, "공지 생성에 성공하였습니다."));
     } catch (err) {

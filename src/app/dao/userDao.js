@@ -393,3 +393,36 @@ exports.getUserNonUser = async function (state) {
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
+
+/***
+ * 전체 사용자 받아오기
+ */
+exports.getAllUser = async function () {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select userId, fcmToken from User where isDeleted = 'N' and userType != 'A';
+        `;
+        const [rows] = await connection.query(query);
+
+        return rows;
+    } catch (err) {
+        logger.error(`App - getAllUser DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.getAllNonUser = async function () {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select nonUserId, fcmToken from NonUser where isSignedUp = 'N' and isDeleted = 'N';
+        `;
+        const [rows] = await connection.query(query);
+
+        return rows;
+    } catch (err) {
+        logger.error(`App - getAllNonUser DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}

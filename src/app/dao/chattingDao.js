@@ -536,3 +536,26 @@ exports.getNotReadChatting = async function (userId, challengeId) {
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
+
+exports.getFcmByChattingId = async function (chattingId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select nickname, fcmToken
+        from Chatting c join User u on c.userId = u.userId
+        where chattingId = ?
+        and c.isDeleted = 'N' and u.isDeleted = 'N';
+        `;
+        const params = [chattingId];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+
+        return rows[0];
+    } catch (err) {
+        logger.error(`App - getFcmByChattingId DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
