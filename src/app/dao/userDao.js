@@ -426,3 +426,19 @@ exports.getAllNonUser = async function () {
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
+
+exports.updateNonUserStatus = async function (nonUserId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        update NonUser set isSignedUp = 'Y' where nonUserId = ?;
+        `;
+        const params = [nonUserId];
+        const [rows] = await connection.query(query, params);
+
+        return rows;
+    } catch (err) {
+        logger.error(`App - updateNonUserStatus DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}

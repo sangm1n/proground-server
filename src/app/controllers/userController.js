@@ -27,7 +27,7 @@ let serAccount = require('../../../config/fcm-admin.json');
  */
 exports.signUp = async function (req, res) {
     const { 
-        name, email, password, nickname, height, weight, gender, loginStatus, fcmToken
+        name, email, password, nickname, height, weight, gender, loginStatus, fcmToken, nonUserId
     } = req.body;
     let status;
 
@@ -42,15 +42,21 @@ exports.signUp = async function (req, res) {
     if (!weight) return res.json(response.successFalse(2043, "몸무게를 입력해주세요."));
     if (!gender) return res.json(response.successFalse(2044, "성별을 입력해주세요."));
     if (!fcmToken) return res.json(response.successFalse(2045, "fcmToken을 입력해주세요."));
+    if (!nonUserId) return res.json(response.successFalse(2046, "nonUserId를 입력해주세요."));
     if (!loginStatus) status = 'G' 
     else status = loginStatus;
 
     try {
         const emailRows = await userDao.checkUserEmail(email);
         const nicknameRows = await userDao.checkUserNickname(nickname);
+        const nonUserRows = await userDao.checkNonUserId(nonUserId);
 
         if (emailRows === 1) return res.json(response.successFalse(3018, "이미 존재하는 이메일입니다."));
         if (nicknameRows === 1) return res.json(response.successFalse(3017, "이미 존재하는 닉네임입니다."));
+        if (nonUserRows === 0) return res.json(response.successFalse(3019, "존재하지 않는 비회원 사용자입니다."));
+
+        await userDao.updateNonUserStatus(nonUserId);
+        logger.info(`비회원 ${nonUserId} 회원으로 변경 완료`);
 
         if (status == 'S') {
             await userDao.postUserInfo(name, email, '', nickname, height, weight, gender, status, fcmToken);
@@ -58,7 +64,8 @@ exports.signUp = async function (req, res) {
             const hashedPassword = await crypto.createHash('sha512').update(password).digest('hex');
             await userDao.postUserInfo(name, email, hashedPassword, nickname, height, weight, gender, status, fcmToken);
         }
-        
+        logger.info(`회원가입 완료`);
+
         const userInfoRows = await userDao.getUserInfo(email);
         const userId = userInfoRows.userId;
 
@@ -73,6 +80,7 @@ exports.signUp = async function (req, res) {
 
         await userDao.postUserLevel(userId);
         await userDao.postUserImage(userId);
+        logger.info(`기본 프로필 이미지 및 레벨 1 부여 완료`);
 
         const result = { jwt: token };
         return res.json(response.successTrue(1012, "회원가입에 성공하였습니다.", result));
