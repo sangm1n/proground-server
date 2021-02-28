@@ -40,9 +40,9 @@ exports.recordRunning = async function (req, res) {
 
                 for (var i = 0; i < runningIdRows.length; i++) {
                     let runningId = runningIdRows[i].runningId;
-                    for (var j = 0; j < Object.keys(section[0]).length; j++) {
-                        let distance = parseFloat(Object.keys(section[0])[j]).toFixed(2);
-                        let pace = parseFloat(Object.values(section[0])[j]).toFixed(2);
+                    for (var j = 0; j < section.length; j++) {
+                        let distance = parseFloat(j+1).toFixed(2);
+                        let pace = parseFloat(section[j]).toFixed(2);
                         await runningDao.postRunningSection(runningId, distance, pace);
                     }
                 }
@@ -71,9 +71,9 @@ exports.recordRunning = async function (req, res) {
 
                 for (var i = 0; i < runningIdRows.length; i++) {
                     let runningId = runningIdRows[i].runningId;
-                    for (var j = 0; j < Object.keys(section[0]).length; j++) {
-                        let distance = parseFloat(Object.keys(section[0])[j]).toFixed(2);
-                        let pace = parseFloat(Object.values(section[0])[j]).toFixed(2);
+                    for (var j = 0; j < section.length; j++) {
+                        let distance = parseFloat(j+1).toFixed(2);
+                        let pace = parseFloat(section[j]).toFixed(2);
                         await runningDao.postRunningSection(runningId, distance, pace);
                     }
                 }
