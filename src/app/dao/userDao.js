@@ -216,7 +216,7 @@ exports.getUserEmail = async function (userId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select email from User where userId = ?;
+        select email from User where userId = ? and isDeleted = 'N';
         `;
         const params = [userId];
         const [rows] = await connection.query(
@@ -394,8 +394,24 @@ exports.getUserNonUser = async function (state) {
     }
 }
 
+exports.updateNonUserStatus = async function (nonUserId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        update NonUser set isSignedUp = 'Y' where nonUserId = ?;
+        `;
+        const params = [nonUserId];
+        const [rows] = await connection.query(query, params);
+
+        return rows;
+    } catch (err) {
+        logger.error(`App - updateNonUserStatus DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
 /***
- * 전체 사용자 받아오기
+ * 푸시 알림에서 사용자 뽑아내기
  */
 exports.getAllUser = async function () {
     try {
@@ -427,18 +443,61 @@ exports.getAllNonUser = async function () {
     }
 }
 
-exports.updateNonUserStatus = async function (nonUserId) {
+exports.getAllUserChallenge = async function (challengeId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        update NonUser set isSignedUp = 'Y' where nonUserId = ?;
+        select distinct u.userId, nickname, fcmToken
+        from User u
+                join UserChallenge uc on u.userId = uc.userId
+        where u.isDeleted = 'N'
+        and uc.isDeleted = 'N'
+        and uc.challengeId = ?
+        and u.userType = 'G';
         `;
-        const params = [nonUserId];
+        const params = [challengeId];
         const [rows] = await connection.query(query, params);
 
         return rows;
     } catch (err) {
-        logger.error(`App - updateNonUserStatus DB Connection error\n: ${err.message}`);
+        logger.error(`App - getAllUserChallenge DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.getAllUserLevel = async function (level) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select distinct u.userId, nickname, fcmToken
+        from User u
+                join UserLevel ul on u.userId = ul.userId
+        where u.isDeleted = 'N'
+        and ul.level = ?
+        and u.userType = 'G';
+        `;
+        const params = [level];
+        const [rows] = await connection.query(query, params);
+
+        return rows;
+    } catch (err) {
+        logger.error(`App - getAllUserLevel DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.getUserFcmToken = async function (userId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select userId, nickname, fcmToken from User where userId = ? and isDeleted = 'N' and userType = 'G';
+        `;
+        const params = [userId];
+        const [rows] = await connection.query(query, params);
+        
+        return rows[0];
+    } catch (err) {
+        logger.error(`App - getUserFcmToken DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }

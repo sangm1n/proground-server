@@ -2,6 +2,7 @@ const {pool} = require('../../../config/database');
 const {logger} = require('../../../config/winston');
 const response = require('../../utils/response');
 
+const challengeDao = require('../dao/challengeDao');
 const adminDao = require('../dao/adminDao');
 const userDao = require('../dao/userDao');
 const notification = require('../../utils/notification');
@@ -192,6 +193,155 @@ exports.createNotice = async function (req, res) {
         return res.json(response.successTrue(1000, "공지 생성에 성공하였습니다."));
     } catch (err) {
         logger.error(`App - createNotice Query error\n: ${err.message}`);
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+    }
+}
+
+/***
+ * update : 2021-02-28
+ * 챌린지별 부여 API
+ */
+exports.spreadChallenge = async function (req, res) {
+    const userId = req.verifiedToken.userId;
+    const {
+        typeId
+    } = req.body;
+    const { challengeId } = req.params;
+    const { type } = req.query;
+
+    if (!challengeId) return res.json(response.successFalse(2000, "챌린지 번호를 입력해주세요.")); 
+    if (!typeId) return res.json(response.successFalse(2010, "타입 번호를 입력해주세요.")); 
+    if (!type || (type !== "mission" && type !== "card")) return res.json(response.successFalse(2020, "올바른 타입을 입력해주세요.")); 
+    
+    try {
+        const adminRows = await adminDao.checkAdmin(userId);
+        if (adminRows === 0) return res.json(response.successFalse(3000, "관리자가 아닙니다."));
+
+        const checkRows = await challengeDao.checkChallenge(challengeId);
+        if (checkRows === 0) return res.json(response.successFalse(3010, "존재하지 않는 챌린지입니다."));
+
+        const challengeRows = await userDao.getAllUserChallenge(challengeId);
+        if (type === "mission") {
+            for (var i = 0; i < challengeRows.length; i++) {
+                await adminDao.postUserMission(challengeRows[i].userId, typeId);
+
+                if (challengeRows[i].fcmToken !== null) {
+                    notification('짜잔! 새로운 미션이 도착했어요!', '', challengeRows[i].fcmToken);
+                }
+            }
+
+            return res.json(response.successTrue(1000, "챌린지별 미션 부여에 성공하였습니다."));
+        } else {
+            for (var i = 0; i < challengeRows.length; i++) {
+                await adminDao.postUserCard(challengeRows[i].userId, typeId);
+
+                if (challengeRows[i].fcmToken !== null) {
+                    notification('우와! 새로운 카드✨ 가 도착했어요!', '', challengeRows[i].fcmToken);
+                }
+            }
+
+            return res.json(response.successTrue(1010, "챌린지별 카드 부여에 성공하였습니다."));
+        }
+    } catch (err) {
+        logger.error(`App - spreadChallenge Query error\n: ${err.message}`);
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+    }
+}
+
+/***
+ * update : 2021-02-28
+ * 레벨별 부여 API
+ */
+exports.spreadLevel = async function (req, res) {
+    const userId = req.verifiedToken.userId;
+    const {
+        typeId
+    } = req.body;
+    const { level } = req.params;
+    const { type } = req.query;
+
+    if (!level) return res.json(response.successFalse(2000, "레벨을 입력해주세요.")); 
+    if (!typeId) return res.json(response.successFalse(2010, "타입 번호를 입력해주세요.")); 
+    if (!type || (type !== "mission" && type !== "card")) return res.json(response.successFalse(2020, "올바른 타입을 입력해주세요.")); 
+    
+    try {
+        const checkRows = await adminDao.checkAdmin(userId);
+        if (checkRows === 0) return res.json(response.successFalse(3000, "관리자가 아닙니다."));
+
+        if (level < 0 || level > 9) return res.json(response.successFalse(3010, "레벨은 1~9까지만 존재합니다."));
+
+        const levelRows = await userDao.getAllUserLevel(level);
+        if (type === "mission") {
+            for (var i = 0; i < levelRows.length; i++) {
+                await adminDao.postUserMission(levelRows[i].userId, typeId);
+
+                if (levelRows[i].fcmToken !== null) {
+                    notification('짜잔! 새로운 미션이 도착했어요!', '', levelRows[i].fcmToken);
+                }
+            }
+
+            return res.json(response.successTrue(1000, "레벨별 미션 부여에 성공하였습니다."));
+        } else {
+            for (var i = 0; i < levelRows.length; i++) {
+                console.log(levelRows[i].userId)
+                await adminDao.postUserCard(levelRows[i].userId, typeId);
+
+                if (levelRows[i].fcmToken !== null) {
+                    notification('우와! 새로운 카드✨ 가 도착했어요!', '', levelRows[i].fcmToken);
+                }
+            }
+
+            return res.json(response.successTrue(1010, "레벨별 카드 부여에 성공하였습니다."));
+        }
+    } catch (err) {
+        logger.error(`App - spreadLevel Query error\n: ${err.message}`);
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+    }
+}
+
+/***
+ * update : 2021-02-28
+ * 사용자별 부여 API
+ */
+exports.spreadUser = async function (req, res) {
+    const uuserId = req.verifiedToken.userId;
+    const {
+        typeId
+    } = req.body;
+    const { userId } = req.params;
+    const { type } = req.query;
+
+    if (!userId) return res.json(response.successFalse(2000, "회원 번호를 입력해주세요.")); 
+    if (!typeId) return res.json(response.successFalse(2010, "타입 번호를 입력해주세요.")); 
+    if (!type || (type !== "mission" && type !== "card")) return res.json(response.successFalse(2020, "올바른 타입을 입력해주세요.")); 
+    
+    try {
+        const checkRows = await adminDao.checkAdmin(uuserId);
+        if (checkRows === 0) return res.json(response.successFalse(3000, "관리자가 아닙니다."));
+
+        const profileRows = await userDao.getUserProfile(userId);
+        if (profileRows === undefined) return res.json(response.successFalse(3010, "존재하지 않는 사용자입니다."));
+
+        const userRows = await userDao.getUserFcmToken(userId);
+        if (type === "mission") {
+            await adminDao.postUserMission(userRows.userId, typeId);
+
+            if (userRows.fcmToken !== null) {
+                notification('짜잔! 새로운 미션이 도착했어요!', '', userRows.fcmToken);
+            }
+
+            return res.json(response.successTrue(1000, "회원별 미션 부여에 성공하였습니다."));
+        } else {
+            await adminDao.postUserCard(userRows.userId, typeId);
+
+            if (userRows.fcmToken !== null) {
+                notification('우와! 새로운 카드✨ 가 도착했어요!', '', userRows.fcmToken);
+            }
+
+            return res.json(response.successTrue(1010, "회원별 카드 부여에 성공하였습니다."));
+        }
+    } catch (err) {
+        logger.error(`App - spreadUser Query error\n: ${err.message}`);
         return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
     }
 }

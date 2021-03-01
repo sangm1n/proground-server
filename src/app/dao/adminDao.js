@@ -174,3 +174,39 @@ exports.postNotice = async function (title, content, image) {
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
+
+/***
+ * UserMission 생성
+ */
+exports.postUserMission = async function (userId, missionId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        insert into UserMission (userId, missionId) values (?, ?);
+        `;
+        const params = [userId, missionId];
+        await connection.query(query, params);
+        connection.release();
+    } catch (err) {
+        logger.error(`App - postUserMission DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+/***
+ * UserCard 생성
+ */
+exports.postUserCard = async function (userId, cardId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        insert into UserCard (userId, cardId) values (?, ?);
+        `;
+        const params = [userId, cardId];
+        await connection.query(query, params);
+        connection.release();
+    } catch (err) {
+        logger.error(`App - postUserCard DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}

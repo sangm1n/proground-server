@@ -227,7 +227,7 @@ exports.getRecommendedMission = async function (userId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select m.missionId, cast(distance as double) as distance, time, leaderId, nickname, timestampdiff(day, now(), endDate) + 1 as date
+        select m.missionId, cast(distance as double) as distance, time, leaderId, nickname, profileImage, timestampdiff(day, now(), endDate) + 1 as date
         from Mission m
                 join UserMission um on m.missionId = um.missionId
                 join User u on m.leaderId = u.userId
@@ -254,7 +254,7 @@ exports.getMissionHistory = async function (userId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         let query = `
-        select distinct m.leaderId, nickname, v.missionCount
+        select distinct m.leaderId, nickname, profileImage, v.missionCount
         from Mission m
                 join UserMission um on m.missionId = um.missionId
                 join User u on m.leaderId = u.userId
