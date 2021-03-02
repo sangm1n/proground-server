@@ -70,9 +70,10 @@ exports.postUserNotice = async function (userId, noticeId, isSignedUp) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        insert into UserNotice (userId, noticeId, isSignedUp) values (?, ?, ?);
+        insert into UserNotice (userId, noticeId, isSignedUp) select ?, ?, ? from dual
+        where not exists (select userId, noticeId, isSignedUp from UserNotice where userId = ? and noticeId = ? and isSignedUp = ?);
         `;
-        const params = [userId, noticeId, isSignedUp];
+        const params = [userId, noticeId, isSignedUp, userId, noticeId, isSignedUp];
         const [rows] = await connection.query(query, params);
         connection.release();
 

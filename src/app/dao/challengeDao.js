@@ -286,9 +286,10 @@ exports.postChallenge = async function (userId, challengeId, challengeColor, cha
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
         insert into UserChallenge (userId, challengeId, lastReadTime, challengeColor, challengeTeamName)
-        values (?, ?, null, ?, ?);
+        select ?, ?, null, ?, ? from dual
+        where not exists (select * from UserChallenge where userId = ? and challengeId = ? and challengeColor = ? and challengeTeamName = ?;
         `;
-        const params = [userId, challengeId, challengeColor, challengeTeamName];
+        const params = [userId, challengeId, challengeColor, challengeTeamName, userId, challengeId, challengeColor, challengeTeamName];
         const [rows] = await connection.query(
             query, params
         );

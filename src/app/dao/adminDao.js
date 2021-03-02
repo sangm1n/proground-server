@@ -58,9 +58,10 @@ exports.postChallengeCard = async function (challengeId, cardId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        insert into ChallengeCard (challengeId, cardId) values (?, ?);
+        insert into ChallengeCard (challengeId, cardId) select ?, ? from dual
+        where not exists (select challengeId, cardId from ChallengeCard where challengeId = ? and cardId = ?);
         `;
-        const params = [challengeId, cardId];
+        const params = [challengeId, cardId, challengeId, cardId];
         await connection.query(query, params);
         connection.release();
     } catch (err) {
@@ -69,14 +70,13 @@ exports.postChallengeCard = async function (challengeId, cardId) {
     }
 }
 
-exports.getChallengeIdByName = async function (challengeName, introduction, challengeType) {
+exports.getRecentChallengeId = async function () {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select challengeId from Challenge where challengeName = ? and introduction = ? and challengeType = ?;
+        select challengeId from Challenge order by createdAt desc limit 1;
         `;
-        const params = [challengeName, introduction, challengeType];
-        const [rows] = await connection.query(query, params);
+        const [rows] = await connection.query(query);
         connection.release();
 
         return rows[0]['challengeId'];
@@ -214,9 +214,10 @@ exports.postUserMission = async function (userId, missionId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        insert into UserMission (userId, missionId) values (?, ?);
+        insert into UserMission (userId, missionId) select ?, ? from dual
+        where not exists (select userId, missionId from UserMission where userId = ? and missionId = ?);
         `;
-        const params = [userId, missionId];
+        const params = [userId, missionId, userId, missionId];
         await connection.query(query, params);
         connection.release();
     } catch (err) {
@@ -232,9 +233,10 @@ exports.postUserCard = async function (userId, cardId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        insert into UserCard (userId, cardId) values (?, ?);
+        insert into UserCard (userId, cardId) select ?, ? from dual
+        where not exists (select userId, cardId from UserCard where userId = ? and cardId = ?);
         `;
-        const params = [userId, cardId];
+        const params = [userId, cardId, userId, cardId];
         await connection.query(query, params);
         connection.release();
     } catch (err) {

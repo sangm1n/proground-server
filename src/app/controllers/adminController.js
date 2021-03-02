@@ -72,7 +72,7 @@ exports.createChallenge = async function (req, res) {
             await adminDao.insertChallenge(challengeName, introduction, image, challengeType, distance, personnel, minLevel, maxLevel, startDate, endDate, firstColor, firstTeamName, null, null);
             logger.info(`${challengeName} - 목표달성 챌린지 생성 완료`);
             
-            const challengeId = await adminDao.getChallengeIdByName(challengeName, introduction, challengeType);
+            const challengeId = await adminDao.getRecentChallengeId();
             if (cardId) {
                 for (var i = 0; i < cardId.length; i++) {
                     await adminDao.postChallengeCard(challengeId, cardId[i]);
@@ -84,7 +84,7 @@ exports.createChallenge = async function (req, res) {
             await adminDao.insertChallenge(challengeName, introduction, image, challengeType, distance, personnel, minLevel, maxLevel, startDate, endDate, firstColor, firstTeamName, secondColor, secondTeamName);
             logger.info(`${challengeName} - 경쟁전 챌린지 생성 완료`);
 
-            const challengeId = await adminDao.getChallengeIdByName(challengeName, introduction, challengeType);
+            const challengeId = await adminDao.getRecentChallengeId();
             if (cardId) {
                 for (var i = 0; i < cardId.length; i++) {
                     await adminDao.postChallengeCard(challengeId, cardId[i]);

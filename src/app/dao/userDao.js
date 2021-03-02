@@ -154,9 +154,10 @@ exports.postUserLevel = async function (userId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        insert into UserLevel (userId, level) values (?, 1);
+        insert into UserLevel (userId, level) select ?, 1 from dual
+        where not exists (select userId, level from UserLevel where userId = ? and level = 1);
         `
-        const params = [userId];
+        const params = [userId, userId];
         const [rows] = await connection.query(
             query, params
         );
