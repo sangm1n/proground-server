@@ -54,6 +54,38 @@ exports.insertChallenge = async function (challengeName, introduction, image, ch
     }
 }
 
+exports.postChallengeCard = async function (challengeId, cardId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        insert into ChallengeCard (challengeId, cardId) values (?, ?);
+        `;
+        const params = [challengeId, cardId];
+        await connection.query(query, params);
+        connection.release();
+    } catch (err) {
+        logger.error(`App - postChallengeCard DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.getChallengeIdByName = async function (challengeName, introduction, challengeType) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select challengeId from Challenge where challengeName = ? and introduction = ? and challengeType = ?;
+        `;
+        const params = [challengeName, introduction, challengeType];
+        const [rows] = await connection.query(query, params);
+        connection.release();
+
+        return rows[0]['challengeId'];
+    } catch (err) {
+        logger.error(`App - getChallengeIdByName DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
 /***
  * 미션 생성
  */

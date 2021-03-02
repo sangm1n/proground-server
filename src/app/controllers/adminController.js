@@ -6,6 +6,7 @@ const challengeDao = require('../dao/challengeDao');
 const adminDao = require('../dao/adminDao');
 const userDao = require('../dao/userDao');
 const notification = require('../../utils/notification');
+const { getChallengeId } = require('../dao/chattingDao');
 
 /***
  * update : 2021-02-25
@@ -39,7 +40,7 @@ exports.createLeader = async function (req, res) {
 exports.createChallenge = async function (req, res) {
     const userId = req.verifiedToken.userId;
     let {
-        challengeName, introduction, challengeType, distance, personnel, minLevel, maxLevel, startDate, endDate, firstColor, firstTeamName, secondColor, secondTeamName
+        challengeName, introduction, challengeType, distance, personnel, minLevel, maxLevel, startDate, endDate, firstColor, firstTeamName, secondColor, secondTeamName, cardId
     } = req.body;
     
     if (req.file === undefined) return res.json(response.successFalse(2000, "챌린지 이미지를 입력해주세요."));
@@ -70,10 +71,26 @@ exports.createChallenge = async function (req, res) {
             firstTeamName = '목표';
             await adminDao.insertChallenge(challengeName, introduction, image, challengeType, distance, personnel, minLevel, maxLevel, startDate, endDate, firstColor, firstTeamName, null, null);
             logger.info(`${challengeName} - 목표달성 챌린지 생성 완료`);
+            
+            const challengeId = await adminDao.getChallengeIdByName(challengeName, introduction, challengeType);
+            if (cardId) {
+                for (var i = 0; i < cardId.length; i++) {
+                    await adminDao.postChallengeCard(challengeId, cardId[i]);
+                }
+                logger.info(`${challengeName} - 해당 카드 부여 완료`)
+            }
         // 경쟁전
         } else {
             await adminDao.insertChallenge(challengeName, introduction, image, challengeType, distance, personnel, minLevel, maxLevel, startDate, endDate, firstColor, firstTeamName, secondColor, secondTeamName);
             logger.info(`${challengeName} - 경쟁전 챌린지 생성 완료`);
+
+            const challengeId = await adminDao.getChallengeIdByName(challengeName, introduction, challengeType);
+            if (cardId) {
+                for (var i = 0; i < cardId.length; i++) {
+                    await adminDao.postChallengeCard(challengeId, cardId[i]);
+                }
+                logger.info(`${challengeName} - 해당 카드 부여 완료`)
+            }
         }
         return res.json(response.successTrue(1000, "챌린지 생성에 성공하였습니다."));
     } catch (err) {
