@@ -387,6 +387,7 @@ exports.getUserNonUser = async function (state) {
         select ` + state + `;
         `;
         const [rows] = await connection.query(query);
+        connection.release();
 
         return rows[0];
     } catch (err) {
@@ -403,6 +404,7 @@ exports.updateNonUserStatus = async function (nonUserId) {
         `;
         const params = [nonUserId];
         const [rows] = await connection.query(query, params);
+        connection.release();
 
         return rows;
     } catch (err) {
@@ -421,6 +423,7 @@ exports.getAllUser = async function () {
         select userId, fcmToken from User where isDeleted = 'N' and userType != 'A';
         `;
         const [rows] = await connection.query(query);
+        connection.release();
 
         return rows;
     } catch (err) {
@@ -436,6 +439,7 @@ exports.getAllNonUser = async function () {
         select nonUserId, fcmToken from NonUser where isSignedUp = 'N' and isDeleted = 'N';
         `;
         const [rows] = await connection.query(query);
+        connection.release();
 
         return rows;
     } catch (err) {
@@ -458,6 +462,7 @@ exports.getAllUserChallenge = async function (challengeId) {
         `;
         const params = [challengeId];
         const [rows] = await connection.query(query, params);
+        connection.release();
 
         return rows;
     } catch (err) {
@@ -479,6 +484,7 @@ exports.getAllUserLevel = async function (level) {
         `;
         const params = [level];
         const [rows] = await connection.query(query, params);
+        connection.release();
 
         return rows;
     } catch (err) {
@@ -495,6 +501,7 @@ exports.getUserFcmToken = async function (userId) {
         `;
         const params = [userId];
         const [rows] = await connection.query(query, params);
+        connection.release();
         
         return rows[0];
     } catch (err) {
@@ -510,6 +517,7 @@ exports.countAllNotice = async function () {
         select count(noticeId) as countNotice from Notice where isDeleted = 'N';
         `;
         const [rows] = await connection.query(query);
+        connection.release();
         
         return rows[0]['countNotice'];
     } catch (err) {
