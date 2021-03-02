@@ -64,3 +64,21 @@ exports.getNotice = async function (noticeId) {
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
+
+// 개별 공지사항 읽었을 때 UserNotice 테이블에 넣어주기
+exports.postUserNotice = async function (userId, noticeId, isSignedUp) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        insert into UserNotice (userId, noticeId, isSignedUp) values (?, ?, ?);
+        `;
+        const params = [userId, noticeId, isSignedUp];
+        const [rows] = await connection.query(query, params);
+        connection.release();
+
+        return rows[0];
+    } catch (err) {
+        logger.error(`App - postUserNotice DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}

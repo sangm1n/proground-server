@@ -190,18 +190,29 @@ exports.check = async function (req, res) {
 
     if (token === undefined & nonUserId === undefined) return res.json(response.successTrue(1060, "처음 들어온 비회원입니다."));
 
+    const countNotice = await userDao.countAllNotice();
+    logger.info(`전체 공지사항 ${countNotice}개`);
+
     if (token === undefined) {
         const state = `nonUserId from NonUser where nonUserId = ${Number(nonUserId)}`;
         const result = await userDao.getUserNonUser(state);
 
         if (!result) return res.json(response.successFalse(2051, "비회원 자동 로그인에 실패하였습니다."));
-        else return res.json(response.successTrue(1051, "비회원 자동 로그인에 성공하였습니다.", {userId: result.nonUserId}));
+        else {
+            const countReadNotice = await userDao.countReadNotice(nonUserId, 'N');
+            logger.info(`읽은 공지사항 ${countReadNotice}개`);
+            return res.json(response.successTrue(1051, "비회원 자동 로그인에 성공하였습니다.", {userId: result.nonUserId, notReadNotice: countNotice-countReadNotice}));
+        }
     } else {
         const state = `userId from User where userId = ${Number(token.userId)}`;
         const result = await userDao.getUserNonUser(state);
 
         if (!result) return res.json(response.successFalse(2050, "회원 자동 로그인에 실패하였습니다."));
-        return res.json(response.successTrue(1050, "회원 자동 로그인에 성공하였습니다.", {userId: result.userId}));
+        else {
+            const countReadNotice = await userDao.countReadNotice(token.userId, 'Y');
+            logger.info(`읽은 공지사항 ${countReadNotice}개`);
+            return res.json(response.successTrue(1050, "회원 자동 로그인에 성공하였습니다.", {userId: result.userId, notReadNotice: countNotice-countReadNotice}));
+        }
     }
 };
 

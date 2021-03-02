@@ -501,3 +501,36 @@ exports.getUserFcmToken = async function (userId) {
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
+
+exports.countAllNotice = async function () {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select count(noticeId) as countNotice from Notice where isDeleted = 'N';
+        `;
+        const [rows] = await connection.query(query);
+        
+        return rows[0]['countNotice'];
+    } catch (err) {
+        logger.error(`App - countAllNotice DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+// 읽은 공지 개수
+exports.countReadNotice = async function (userId, state) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select count(noticeId) as countReadNotice from UserNotice where userId = ? and isSignedUp = ?;
+        `;
+        const params = [userId, state];
+        const [rows] = await connection.query(query, params);
+        connection.release();
+
+        return rows[0]['countReadNotice'];
+    } catch (err) {
+        logger.error(`App - countReadNotice DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
