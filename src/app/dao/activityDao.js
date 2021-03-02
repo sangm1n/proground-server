@@ -144,7 +144,7 @@ exports.getRunningHistory = async function (state) {
 }
 
 // 카드 기록
-exports.getCardHistory = async function (userId, page, size) {
+exports.getCardHistory = async function (userId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
@@ -161,10 +161,9 @@ exports.getCardHistory = async function (userId, page, size) {
         where u.userId = ?
         and u.isDeleted = 'N'
         and uc.isDeleted = 'N'
-        and c.isDeleted = 'N'
-        limit ?, ?
+        and c.isDeleted = 'N';
         `;
-        const params = [userId, Number(page), Number(size)];
+        const params = [userId];
         const [rows] = await connection.query(query, params);
 
         connection.release();
@@ -177,7 +176,7 @@ exports.getCardHistory = async function (userId, page, size) {
 }
 
 // 챌린지 기록
-exports.getChallengeHistory = async function (userId, page, size) {
+exports.getChallengeHistory = async function (userId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
@@ -207,17 +206,16 @@ exports.getChallengeHistory = async function (userId, page, size) {
         and uc.userId = ?
         and endDate < str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H')
         group by challengeId
-        order by endDate desc
-        limit ?, ?
+        order by endDate desc;
         `;
-        const params = [userId, userId, Number(page), Number(size)];
+        const params = [userId, userId];
         const [rows] = await connection.query(query, params);
 
         connection.release();
 
         return rows;
     } catch (err) {
-        logger.error(`App - getCardHistory DB Connection error\n: ${err.message}`);
+        logger.error(`App - getChallengeHistory DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }

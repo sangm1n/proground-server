@@ -109,25 +109,17 @@ exports.cardHistory = async function (req, res) {
     const {
         nonUserId
     } = req.params;
-    let {
-        page, size
-    } = req.query;
 
     if (token === undefined & nonUserId == 0) return res.json(response.successFalse(2700, "비회원 Id를 입력해주세요."));
-    if (!page) return res.json(response.successFalse(2060, "페이지를 입력해주세요."));
-    if (!size) return res.json(response.successFalse(2070, "사이즈를 입력해주세요."));
-    if (page < 1) return res.json(response.successFalse(2061, "페이지 번호를 확인해주세요."));
 
     try {
-        page = size * (page - 1);
-
         // 비회원
         if (token === undefined) {
             return res.json(response.successTrue(1721, "아직 받은 카드가 없습니다."));
         // 회원
         } else {
             const userId = token.userId;
-            const historyRows = await activityDao.getCardHistory(userId, page, size);
+            const historyRows = await activityDao.getCardHistory(userId);
             
             if (historyRows.length < 1) return res.json(response.successTrue(1721, "아직 받은 카드가 없습니다."));
             return res.json(response.successTrue(1720, "받은 카드 조회에 성공하였습니다.", historyRows));
@@ -149,25 +141,17 @@ exports.challengeHistory = async function (req, res) {
     const {
         nonUserId
     } = req.params;
-    let {
-        page, size
-    } = req.query;
 
     if (token === undefined & nonUserId == 0) return res.json(response.successFalse(2700, "비회원 Id를 입력해주세요."));
-    if (!page) return res.json(response.successFalse(2060, "페이지를 입력해주세요."));
-    if (!size) return res.json(response.successFalse(2070, "사이즈를 입력해주세요."));
-    if (page < 1) return res.json(response.successFalse(2061, "페이지 번호를 확인해주세요."));
 
     try {
-        page = size * (page - 1);
-
         // 비회원
         if (token === undefined) {
             return res.json(response.successTrue(1731, "아직 달성한 챌린지가 없습니다."));
         // 회원
         } else {
             const userId = token.userId;
-            const historyRows = await activityDao.getChallengeHistory(userId, page, size);
+            const historyRows = await activityDao.getChallengeHistory(userId);
             
             if (historyRows.length < 1) return res.json(response.successTrue(1731, "아직 달성한 챌린지가 없습니다."));
             return res.json(response.successTrue(1730, "달성한 챌린지 조회에 성공하였습니다.", historyRows));
