@@ -148,7 +148,7 @@ exports.getCardHistory = async function (userId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select c.cardId,
+        select distinct c.cardId,
             title,
             subTitle,
             cardImage,
@@ -161,7 +161,7 @@ exports.getCardHistory = async function (userId) {
         where u.userId = ?
         and u.isDeleted = 'N'
         and uc.isDeleted = 'N'
-        and c.isDeleted = 'N';
+        and c.isDeleted = 'N' order by uc.createdAt desc;
         `;
         const params = [userId];
         const [rows] = await connection.query(query, params);

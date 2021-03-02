@@ -130,17 +130,18 @@ exports.getChallenge = async function (challengeId) {
             date_format(startDate, '%Y.%c.%e')     as startDate,
             date_format(endDate, '%Y.%c.%e')       as endDate
         from Challenge c
-                join UserChallenge uc on c.challengeId = uc.challengeId
-                join (select count(userId) as userCount, uc.challengeId
+                left join UserChallenge uc on c.challengeId = uc.challengeId
+                join (select ifnull(count(userId), 0) as userCount, c.challengeId
                     from UserChallenge uc
-                                join Challenge c on uc.challengeId = c.challengeId
-                    where uc.isDeleted = 'N'
-                        and c.isDeleted = 'N'
-                        and uc.challengeColor is not null
-                    group by uc.challengeId) v
-                    on uc.challengeId = v.challengeId
+                                right join Challenge c on uc.challengeId = c.challengeId
+                    where c.isDeleted = 'N'
+                        and case
+                                when userId is not null then uc.isDeleted = 'N'
+                                    and uc.challengeColor is not null
+                                else 1 end
+                    group by c.challengeId) v
+                    on c.challengeId = v.challengeId
         where c.isDeleted = 'N'
-        and uc.isDeleted = 'N'
         and c.challengeId = ?
         group by c.challengeId;
         `;
@@ -182,10 +183,7 @@ exports.getCard = async function (challengeId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select cardId, title, subTitle
-        from Card
-        where isDeleted = 'N'
-        and challengeId = ?;
+        select c.cardId, title, subTitle from Card c join ChallengeCard cc on c.cardId = cc.cardId where challengeId = ? and c.isDeleted = 'N';
         `;
         const params = [challengeId];
         const [rows] = await connection.query(query, params);
