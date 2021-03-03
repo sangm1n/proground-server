@@ -23,7 +23,7 @@ schedule.scheduleJob('0 0 18 * * *', async function() {
     
     for (var i = 0; i < totalFcmRows.length; i++) {
         if (totalFcmRows[i].fcmToken !== null) {
-            notification(`헛둘헛둘! 오늘 ${countRows.runningCount}명이 달렸어요! 🏃🏻`, '', totalFcmRows[i].fcmToken);
+            notification('[프로그라운드]', `헛둘헛둘! 오늘 ${countRows.runningCount}명이 달렸어요! 🏃🏻`, totalFcmRows[i].fcmToken);
         }
     }
 })

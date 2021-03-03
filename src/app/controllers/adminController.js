@@ -6,7 +6,6 @@ const challengeDao = require('../dao/challengeDao');
 const adminDao = require('../dao/adminDao');
 const userDao = require('../dao/userDao');
 const notification = require('../../utils/notification');
-const { getChallengeId } = require('../dao/chattingDao');
 
 /***
  * update : 2021-02-25
@@ -203,7 +202,7 @@ exports.createNotice = async function (req, res) {
         
         for (var i = 0; i < totalFcmRows.length; i++) {
             if (totalFcmRows[i].fcmToken !== null) {
-                notification('띵동! 새로운 소식💌 이 도착했어요!', '', totalFcmRows[i].fcmToken);
+                notification('[프로그라운드]', '띵동! 새로운 소식💌 이 도착했어요!', totalFcmRows[i].fcmToken);
             }
         }
 
@@ -243,7 +242,7 @@ exports.spreadChallenge = async function (req, res) {
                 await adminDao.postUserMission(challengeRows[i].userId, typeId);
 
                 if (challengeRows[i].fcmToken !== null) {
-                    notification('짜잔! 새로운 미션이 도착했어요!', '', challengeRows[i].fcmToken);
+                    notification('[프로그라운드]', '짜잔! 새로운 미션이 도착했어요!', challengeRows[i].fcmToken);
                 }
             }
 
@@ -253,7 +252,7 @@ exports.spreadChallenge = async function (req, res) {
                 await adminDao.postUserCard(challengeRows[i].userId, typeId);
 
                 if (challengeRows[i].fcmToken !== null) {
-                    notification('우와! 새로운 카드✨ 가 도착했어요!', '', challengeRows[i].fcmToken);
+                    notification('[프로그라운드]', '우와! 새로운 카드✨ 가 도착했어요!', challengeRows[i].fcmToken);
                 }
             }
 
@@ -293,7 +292,7 @@ exports.spreadLevel = async function (req, res) {
                 await adminDao.postUserMission(levelRows[i].userId, typeId);
 
                 if (levelRows[i].fcmToken !== null) {
-                    notification('짜잔! 새로운 미션이 도착했어요!', '', levelRows[i].fcmToken);
+                    notification('[프로그라운드]', '짜잔! 새로운 미션이 도착했어요!', levelRows[i].fcmToken);
                 }
             }
 
@@ -304,7 +303,7 @@ exports.spreadLevel = async function (req, res) {
                 await adminDao.postUserCard(levelRows[i].userId, typeId);
 
                 if (levelRows[i].fcmToken !== null) {
-                    notification('우와! 새로운 카드✨ 가 도착했어요!', '', levelRows[i].fcmToken);
+                    notification('[프로그라운드]', '우와! 새로운 카드✨ 가 도착했어요!', levelRows[i].fcmToken);
                 }
             }
 
@@ -344,7 +343,7 @@ exports.spreadUser = async function (req, res) {
             await adminDao.postUserMission(userRows.userId, typeId);
 
             if (userRows.fcmToken !== null) {
-                notification('짜잔! 새로운 미션이 도착했어요!', '', userRows.fcmToken);
+                notification('[프로그라운드]', '짜잔! 새로운 미션이 도착했어요!', userRows.fcmToken);
             }
 
             return res.json(response.successTrue(1000, "회원별 미션 부여에 성공하였습니다."));
@@ -352,7 +351,7 @@ exports.spreadUser = async function (req, res) {
             await adminDao.postUserCard(userRows.userId, typeId);
 
             if (userRows.fcmToken !== null) {
-                notification('우와! 새로운 카드✨ 가 도착했어요!', '', userRows.fcmToken);
+                notification('[프로그라운드]', '우와! 새로운 카드✨ 가 도착했어요!', userRows.fcmToken);
             }
 
             return res.json(response.successTrue(1010, "회원별 카드 부여에 성공하였습니다."));
