@@ -102,10 +102,12 @@ exports.challengeInfo = async function (req, res) {
             const checkRegRows = await challengeDao.checkRegisterChallenge(userId, challengeId);
             const checkLevelRows = await challengeDao.checkChallengeLevel(userId, challengeId);
             const checkMaxRows = await challengeDao.checkMaxChallenge(userId);
+            const endDate = await challengeDao.challengeEndDate(challengeId);
+            const countMembers = await challengeDao.getChallengeMembers(challengeId);
 
             if (checkRegRows === 1) {
                 status = 'C';
-            } else if (checkLevelRows === 0 || checkMaxRows > maxChallenge) {
+            } else if (checkLevelRows === 0 || checkMaxRows > maxChallenge || endDate > new Date() || countMembers + 1 > challengeRows.personnel) {
                 status = 'B';
             } else {
                 status = 'A';

@@ -111,6 +111,23 @@ exports.getMyChallenge = async function (userId, page, size) {
 }
 
 // 개별 챌린지 조회
+exports.challengeEndDate = async function (challengeId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        let query = `
+        select endDate from Challenge where challengeId = ? and isDeleted = 'N';
+        `;
+        const params = [challengeId];
+        const [rows] = await connection.query(query, params);
+        connection.release();
+
+        return rows[0]['endDate'];
+    } catch (err) {
+        logger.error(`App - challengeEndDate DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
 exports.getChallenge = async function (challengeId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
@@ -152,6 +169,23 @@ exports.getChallenge = async function (challengeId) {
         return rows[0];
     } catch (err) {
         logger.error(`App - getChallenge DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.getChallengeMembers = async function (challengeId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        let query = `
+        select count(userId) as countUsers from UserChallenge where challengeId = ? and isDeleted = 'N';
+        `;
+        const params = [challengeId];
+        const [rows] = await connection.query(query, params);
+        connection.release();
+
+        return rows[0]['countUsers'];
+    } catch (err) {
+        logger.error(`App - getChallengeMembers DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
@@ -287,7 +321,7 @@ exports.postChallenge = async function (userId, challengeId, challengeColor, cha
         const query = `
         insert into UserChallenge (userId, challengeId, lastReadTime, challengeColor, challengeTeamName)
         select ?, ?, null, ?, ? from dual
-        where not exists (select * from UserChallenge where userId = ? and challengeId = ? and challengeColor = ? and challengeTeamName = ?;
+        where not exists (select * from UserChallenge where userId = ? and challengeId = ? and challengeColor = ? and challengeTeamName = ?);
         `;
         const params = [userId, challengeId, challengeColor, challengeTeamName, userId, challengeId, challengeColor, challengeTeamName];
         const [rows] = await connection.query(
