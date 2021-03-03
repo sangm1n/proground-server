@@ -210,8 +210,17 @@ exports.check = async function (req, res) {
         if (!result) return res.json(response.successFalse(2050, "회원 자동 로그인에 실패하였습니다."));
         else {
             const countReadNotice = await userDao.countReadNotice(token.userId, 'Y');
+            const profileRows = await userDao.getUserProfile(token.userId);
+
+            const resultRows = {
+                userId: result.userId,
+                notReadNotice: countNotice - countReadNotice,
+                height: profileRows.height,
+                weight: profileRows.weight,
+                gender: profileRows.gender
+            }
             logger.info(`읽은 공지사항 ${countReadNotice}개`);
-            return res.json(response.successTrue(1050, "회원 자동 로그인에 성공하였습니다.", {userId: result.userId, notReadNotice: countNotice-countReadNotice}));
+            return res.json(response.successTrue(1050, "회원 자동 로그인에 성공하였습니다.", resultRows));
         }
     }
 };
@@ -519,7 +528,7 @@ exports.fcmPush = async function (req, res) {
                 title: "테스트",
                 body: "안녕하세요",
             },
-            token: "fP99LkhuQFKVCPdt_aTinA:APA91bGXXP-i3ae0VQT50EPjSRDsTOKXt3YjL72bXMurHFeegO_TM5Eari0e2aI_ZwTqqdi5GG0fAFg7EmHPVS1O60Mu_YvD6B8HUZ0i-CJEroCajQ3iYQ0X_fe2Ou0AcLBWpDuAtEgF"
+            token: "cQksO2DqTJK3vTK6dI4tIb:APA91bGs8CI1TtvugLkwtfJNNHMaDxnrfipntbxwhXymNFYQ1KYsRv9TC8_YYWL9JvfLQ92ZrtYEeXVDJX8Ld5iWuRP2TfEZOQFS8TDGf165Qdn34zxVQuZmiJVZG13oX_TQyAV5WMMP"
         };
 
         admin
