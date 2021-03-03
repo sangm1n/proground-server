@@ -33,7 +33,7 @@ exports.getChatting = async function (userId, challengeId) {
                 join Level l on ul.level = l.level
                 join Chatting c on u.userId = c.userId
                 join UserChallenge uc on c.challengeId = uc.challengeId and c.userId = uc.userId
-                join (select userId, chattingId, count(chattingId) - 1 as countChatting
+                join (select userId, chattingId, if(count(chattingId) - 2 < 0, 0, count(chattingId) - 2) as countChatting
                     from Chatting c
                     where challengeId = ?
                     group by parentChattingId) v
@@ -90,7 +90,7 @@ exports.getChatting = async function (userId, challengeId) {
                 join UserLevel ul on u.userId = ul.userId
                 join Level l on ul.level = l.level
                 join Chatting c on u.userId = c.userId
-                join (select userId, chattingId, count(chattingId) - 1 as countChatting
+                join (select userId, chattingId, if(count(chattingId) - 2 < 0, 0, count(chattingId) - 2) as countChatting
                     from Chatting c
                     where challengeId = ?
                     group by parentChattingId) v
@@ -192,7 +192,7 @@ exports.getChatting = async function (userId, challengeId) {
 
         return [firstRows, secondRows, thirdRows];
     } catch (err) {
-        logger.error(`App - checkChallengeChat DB Connection error\n: ${err.message}`);
+        logger.error(`App - getChatting DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
@@ -291,7 +291,7 @@ exports.getChallengeId = async function (chattingId) {
 }
 
 // 개별 채팅 조회
-exports.getEachChatting = async function (chattingId, challengeType, page, size) {
+exports.getEachChatting = async function (chattingId, challengeType) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         
@@ -387,8 +387,7 @@ exports.getEachChatting = async function (chattingId, challengeType, page, size)
             where parentChattingId = ? and c.chattingId != parentChattingId
             and u.isDeleted = 'N'
             and c.isDeleted = 'N'
-            order by c.createdAt
-            limit ?, ?;
+            order by c.createdAt;
             `;
         } else {
             query = `
@@ -419,11 +418,10 @@ exports.getEachChatting = async function (chattingId, challengeType, page, size)
             where parentChattingId = ? and c.chattingId != parentChattingId
             and u.isDeleted = 'N'
             and c.isDeleted = 'N'
-            order by c.createdAt
-            limit ?, ?;
+            order by c.createdAt;
             `;
         }
-        params = [chattingId, page, size];
+        params = [chattingId];
         const [childChattingRows] = await connection.query(query, params);
 
         connection.release();
@@ -480,7 +478,7 @@ exports.patchLastChatting = async function (lastReadTime, userId, challengeId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        update UserChallenge set lastReadTime = ? where userId = ? and challengeId = ?;
+        update UserChallenge set lastReadTime = ? where userId = ? and challengeId = ? and isDeleted = 'N';
         `;
         const params = [lastReadTime, userId, challengeId];
         const [rows] = await connection.query(
@@ -559,3 +557,38 @@ exports.getFcmByChattingId = async function (chattingId) {
     }
 }
 
+/***
+ * 채팅 시간
+ */
+exports.getChattingTime = async function () {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select createdAt lastChatTime from Chatting where chattingId = last_insert_id() and isDeleted = 'N';
+        `;
+        const [rows] = await connection.query(query);
+        connection.release();
+
+        return rows[0]['lastChatTime'];
+    } catch (err) {
+        logger.error(`App - getChattingTime DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.getLastReadTime = async function (userId, challengeId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select lastReadTime from UserChallenge where userId = ? and challengeId = ? and isDeleted = 'N';
+        `;
+        const params = [userId, challengeId];
+        const [rows] = await connection.query(query, params);
+        connection.release();
+
+        return rows[0]['lastReadTime'];
+    } catch (err) {
+        logger.error(`App - getLastReadTime DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
