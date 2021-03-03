@@ -299,7 +299,6 @@ exports.spreadLevel = async function (req, res) {
             return res.json(response.successTrue(1000, "레벨별 미션 부여에 성공하였습니다."));
         } else {
             for (var i = 0; i < levelRows.length; i++) {
-                console.log(levelRows[i].userId)
                 await adminDao.postUserCard(levelRows[i].userId, typeId);
 
                 if (levelRows[i].fcmToken !== null) {

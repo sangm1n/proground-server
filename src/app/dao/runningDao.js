@@ -182,8 +182,6 @@ exports.deleteRunning = async function (userId, challengeId) {
                 let runningId = rows[i].runningId;
                 let [check] = await connection.query(exist, [runningId]);
 
-                console.log(check[0]['exist'])
-
                 if (check[0]['exist'] === 1) {
                     query = `
                     update RunningLike set status = 'N' where runningId = ?;

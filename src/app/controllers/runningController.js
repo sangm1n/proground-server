@@ -136,7 +136,7 @@ exports.likeRunning = async function (req, res) {
         logger.info(`${runningId}번 러닝에 좋아요 클릭 완료`);
 
         const tmpRows = await runningDao.getFcmByRunningId(runningId);
-        notification(`짝짝짝! 누군가 ${tmpRows.nickname} 님의 러닝을 응원🎉 했어요!`, '', tmpRows.fcmToken);
+        notification('[프로그라운드]', `짝짝짝! 누군가 ${tmpRows.nickname} 님의 러닝을 응원🎉 했어요!`, tmpRows.fcmToken);
 
         const result = await runningDao.getLikeStatus(userId, runningId);
 
