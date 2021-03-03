@@ -222,12 +222,12 @@ exports.challengeStatistic = async function (req, res) {
         if (status === 'today') {
             let statisticInfoRows;
             if (type === 'B') {
-                statisticInfoRows = await challengeDao.getStatsInfo(challengeId, page, size);
+                statisticInfoRows = await challengeDao.getStatsInfo(userId, challengeId, page, size);
                 if (statisticInfoRows.length === 0) return res.json(response.successTrue(1050, "아직 챌린지 통계가 없습니다."));
 
                 return res.json(response.successTrue(1200, "'오늘' 경쟁전 챌린지 통계 조회에 성공하였습니다.", statisticInfoRows));
             } else {
-                statisticInfoRows = await challengeDao.getGoalStatsInfo(challengeId, page, size);
+                statisticInfoRows = await challengeDao.getGoalStatsInfo(userId, challengeId, page, size);
                 if (statisticInfoRows.length === 0) return res.json(response.successTrue(1050, "아직 챌린지 통계가 없습니다."));
 
                 return res.json(response.successTrue(1201, "'오늘' 목표달성 챌린지 통계 조회에 성공하였습니다.", statisticInfoRows));
@@ -236,12 +236,12 @@ exports.challengeStatistic = async function (req, res) {
         } else {
             let statisticInfoRows;
             if (type === 'B') {
-                statisticInfoRows = await challengeDao.getStatsTotalInfo(challengeId, page, size);
+                statisticInfoRows = await challengeDao.getStatsTotalInfo(userId, challengeId, page, size);
                 if (statisticInfoRows.length === 0) return res.json(response.successTrue(1050, "아직 챌린지 통계가 없습니다."));
 
                 return res.json(response.successTrue(1202, "'누적' 경쟁전 챌린지 통계 조회에 성공하였습니다.", statisticInfoRows));
             } else {
-                statisticInfoRows = await challengeDao.getGoalStatsTotalInfo(challengeId, page, size);
+                statisticInfoRows = await challengeDao.getGoalStatsTotalInfo(userId, challengeId, page, size);
                 if (statisticInfoRows.length === 0) return res.json(response.successTrue(1050, "아직 챌린지 통계가 없습니다."));
 
                 return res.json(response.successTrue(1203, "'누적' 목표달성 챌린지 통계 조회에 성공하였습니다.", statisticInfoRows));

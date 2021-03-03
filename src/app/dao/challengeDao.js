@@ -28,22 +28,28 @@ exports.getAllChallenges = async function (page, size) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select c.challengeId,
-            image,
-            minLevel,
-            maxLevel,
-            personnel,
-            if(challengeType = 'A', concat(challengeName, ' with ', nickname) ,challengeName) as challengeName,
-            if(challengeType = 'A', '목표달성', '경쟁전')    as challengeType,
-            distance,
-            (endDate - startDate)                     as period
+        select distinct c.challengeId,
+                        image,
+                        minLevel,
+                        maxLevel,
+                        personnel,
+                        if(challengeType = 'A', concat(challengeName, ' with ', nickname), challengeName) as challengeName,
+                        if(challengeType = 'A', '목표달성', '경쟁전')                                            as challengeType,
+                        distance,
+                        timestampdiff(day, startDate, endDate)                                            as period,
+                        if(timestampdiff(second, now(),
+                                        str_to_date(date_format(endDate, '%Y-%m-%d 23:59:59'), '%Y-%m-%d %H:%i:%s')) < 0,
+                        'Y', 'N')                                                                      as isFinished
         from Challenge c
-                join UserChallenge uc on c.challengeId = uc.challengeId
-                join User u on uc.userId = u.userId
+                left join (select u.userId, challengeId, nickname
+                            from UserChallenge uc
+                                    join User u on uc.userId = u.userId
+                            where userType in ('A', 'L')
+                            and uc.isDeleted = 'N'
+                            and u.isDeleted = 'N') v
+                        on c.challengeId = v.challengeId
         where c.isDeleted = 'N'
-        and uc.isDeleted = 'N'
-        and u.isDeleted = 'N'
-        and userType in ('A', 'L')
+        order by endDate desc
         limit ` + page + `, ` + size + `;
         `;
         const params = [page, size];
@@ -398,7 +404,7 @@ exports.getChallengeTeam = async function (userId, challengeId) {
     }
 }
 
-exports.getStatsInfo = async function (challengeId, page, size) {
+exports.getStatsInfo = async function (userId, challengeId, page, size) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
@@ -407,8 +413,9 @@ exports.getStatsInfo = async function (challengeId, page, size) {
             v.profileImage,
             v.levelColor,
             v.challengeTeamName,
-            cast(distance as double) as distance,
-            ifnull(w.likeCount, 0) as likeCount
+            cast(sum(distance) as double) as distance,
+            ifnull(sum(w.likeCount), 0) as likeCount,
+            if(r.userId = ?, 'Y', 'N') as myself
         from Running r
                 join (select uc.userId, userName, x.levelColor, uc.isDeleted, challengeTeamName, profileImage
                     from User u
@@ -430,10 +437,11 @@ exports.getStatsInfo = async function (challengeId, page, size) {
         and r.isDeleted = 'N'
         and str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H') <= endTime
         and endTime <= str_to_date(date_format(date_add(now(), interval +1 day), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H')
+        group by userId
         order by distance desc
         limit ` + page + `, ` + size + `;
         `;
-        const params = [challengeId, challengeId, page, size];
+        const params = [userId, challengeId, challengeId, page, size];
         const [rows] = await connection.query(
             query, params
         );
@@ -446,7 +454,7 @@ exports.getStatsInfo = async function (challengeId, page, size) {
     }
 }
 
-exports.getGoalStatsInfo = async function (challengeId, page, size) {
+exports.getGoalStatsInfo = async function (userId, challengeId, page, size) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
@@ -454,8 +462,9 @@ exports.getGoalStatsInfo = async function (challengeId, page, size) {
             v.userName,
             v.profileImage,
             v.levelColor,
-            cast(distance as double) as distance,
-            ifnull(w.likeCount, 0) as likeCount
+            cast(sum(distance) as double) as distance,
+            ifnull(sum(w.likeCount), 0) as likeCount,
+            if(r.userId = ?, 'Y', 'N') as myself
         from Running r
                 join (select uc.userId, userName, x.levelColor, uc.isDeleted, challengeTeamName, profileImage
                     from User u
@@ -477,11 +486,12 @@ exports.getGoalStatsInfo = async function (challengeId, page, size) {
         and r.isDeleted = 'N'
         and str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H') <= endTime
         and endTime <= str_to_date(date_format(date_add(now(), interval +1 day), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H')
+        group by userId
         order by distance desc
         limit ` + page + `, ` + size + `;
         `;
 
-        const params = [challengeId, challengeId, page, size];
+        const params = [userId, challengeId, challengeId, page, size];
         const [rows] = await connection.query(
             query, params
         );
@@ -494,7 +504,7 @@ exports.getGoalStatsInfo = async function (challengeId, page, size) {
     }
 }
 
-exports.getStatsTotalInfo = async function (challengeId, page, size) {
+exports.getStatsTotalInfo = async function (userId, challengeId, page, size) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
@@ -503,8 +513,9 @@ exports.getStatsTotalInfo = async function (challengeId, page, size) {
             v.profileImage,
             v.levelColor,
             v.challengeTeamName,
-            cast(distance as double) as distance,
-            if(w.likeCount is null, 0, w.likeCount) as likeCount
+            cast(sum(distance) as double) as distance,
+            ifnull(sum(w.likeCount), 0) as likeCount,
+            if(r.userId = ?, 'Y', 'N') as myself
         from Running r
                 join (select uc.userId, userName, x.levelColor, uc.isDeleted, challengeTeamName, profileImage
                     from User u
@@ -524,10 +535,11 @@ exports.getStatsTotalInfo = async function (challengeId, page, size) {
         where r.challengeId = ?
         and v.isDeleted = 'N'
         and r.isDeleted = 'N'
+        group by userId
         order by distance desc
         limit ` + page + `, ` + size + `;
         `;
-        const params = [challengeId, challengeId, page, size];
+        const params = [userId, challengeId, challengeId, page, size];
         const [rows] = await connection.query(
             query, params
         );
@@ -540,7 +552,7 @@ exports.getStatsTotalInfo = async function (challengeId, page, size) {
     }
 }
 
-exports.getGoalStatsTotalInfo = async function (challengeId, page, size) {
+exports.getGoalStatsTotalInfo = async function (userId, challengeId, page, size) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
@@ -548,8 +560,9 @@ exports.getGoalStatsTotalInfo = async function (challengeId, page, size) {
             v.userName,
             v.profileImage,
             v.levelColor,
-            cast(distance as double) as distance,
-            if(w.likeCount is null, 0, w.likeCount) as likeCount
+            cast(sum(distance) as double) as distance,
+            ifnull(sum(w.likeCount), 0) as likeCount,
+            if(r.userId = ?, 'Y', 'N') as myself
         from Running r
                 join (select uc.userId, userName, x.levelColor, uc.isDeleted, challengeTeamName, profileImage
                     from User u
@@ -569,10 +582,11 @@ exports.getGoalStatsTotalInfo = async function (challengeId, page, size) {
         where r.challengeId = ?
         and v.isDeleted = 'N'
         and r.isDeleted = 'N'
+        group by userId
         order by distance desc
         limit ` + page + `, ` + size + `;
         `;
-        const params = [challengeId, challengeId, page, size];
+        const params = [userId, challengeId, challengeId, page, size];
         const [rows] = await connection.query(
             query, params
         );
