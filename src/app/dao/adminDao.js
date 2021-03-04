@@ -36,6 +36,23 @@ exports.checkAdmin = async function (userId) {
     }
 }
 
+exports.checkLeader = async function (userId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select exists (select userId from User where userId = ? and userType = 'L' and isDeleted = 'N') as exist;
+        `;
+        const params = [userId];
+        const [rows] = await connection.query(query, params);
+        connection.release();
+
+        return rows[0]['exist'];
+    } catch (err) {
+        logger.error(`App - checkLeader DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
 /***
  * 챌린지 생성
  */
@@ -192,13 +209,13 @@ exports.changeLevelColor = async function (level, levelColor) {
 /***
  * 공지 생성
  */
-exports.postNotice = async function (title, content, image) {
+exports.postNotice = async function (title, content, image, banner) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        insert into Notice (title, content, image) values (?, ?, ?);
+        insert into Notice (title, content, image, banner) values (?, ?, ?, ?);
         `;
-        const params = [title, content, image];
+        const params = [title, content, image, banner];
         await connection.query(query, params);
         connection.release();
     } catch (err) {

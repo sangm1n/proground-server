@@ -12,5 +12,7 @@ module.exports = function(app){
     app.route('/admin/users/:userId').post(jwtMiddleware, admin.spreadUser);
 
     app.route('/admin/level').post(jwtMiddleware, admin.modifyLevel);
-    app.route('/admin/notice').post(jwtMiddleware, s3.upload('/notice').single('img'), admin.createNotice);
+    app.route('/admin/notice').post(jwtMiddleware, s3.upload('/notice').fields([
+        { name: 'img', maxCount: 1 }, { name: 'banner', maxCount: 1 }
+    ]), admin.createNotice);
 };

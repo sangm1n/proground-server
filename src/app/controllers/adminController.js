@@ -5,7 +5,9 @@ const response = require('../../utils/response');
 const challengeDao = require('../dao/challengeDao');
 const adminDao = require('../dao/adminDao');
 const userDao = require('../dao/userDao');
+
 const notification = require('../../utils/notification');
+const s3 = require('../../utils/awsS3');
 
 /***
  * update : 2021-02-25
@@ -190,10 +192,20 @@ exports.createNotice = async function (req, res) {
         const checkRows = await adminDao.checkAdmin(userId);
         if (checkRows === 0) return res.json(response.successFalse(3000, "관리자가 아닙니다."));
 
-        if (req.file) {
-            const image = req.file.location;
-            await adminDao.postNotice(title, content, image);
-        } else await adminDao.postNotice(title, content, null);
+        if (!req.files.banner) {
+            if (req.files.img) {
+                const fileName = req.files.img[0].location.split('/')[4];
+                s3.erase('/notice', fileName);
+            }
+            return res.json(response.successFalse(2020, "배너 이미지를 입력해주세요."));
+        }
+        
+        
+        if (req.files.img) {
+            const image = req.files.img[0].location;
+            const banner = req.files.banner[0].location;
+            await adminDao.postNotice(title, content, image, banner);
+        } else await adminDao.postNotice(title, content, null, req.files.banner[0].location);
         logger.info('공지 생성 완료');
 
         const userFcmRows = await userDao.getAllUser();
@@ -205,7 +217,7 @@ exports.createNotice = async function (req, res) {
                 notification('[프로그라운드]', '띵동! 새로운 소식💌 이 도착했어요!', totalFcmRows[i].fcmToken);
             }
         }
-
+        
         return res.json(response.successTrue(1000, "공지 생성에 성공하였습니다."));
     } catch (err) {
         logger.error(`App - createNotice Query error\n: ${err.message}`);
