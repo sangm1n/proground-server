@@ -258,7 +258,7 @@ exports.getUserProfile = async function (userId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select profileImage, userName, nickname, email, height, weight, gender from User where userId = ?;
+        select profileImage, userName, nickname, email, height, weight, gender, isNotified from User where userId = ?;
         `;
         const params = [userId];
         const [rows] = await connection.query(
@@ -420,7 +420,7 @@ exports.getAllUser = async function () {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select userId, fcmToken from User where isDeleted = 'N' and userType != 'A';
+        select userId, fcmToken from User where isDeleted = 'N' and userType != 'A' and isNotified = 'Y';
         `;
         const [rows] = await connection.query(query);
         connection.release();
@@ -436,7 +436,7 @@ exports.getAllNonUser = async function () {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select nonUserId, fcmToken from NonUser where isSignedUp = 'N' and isDeleted = 'N';
+        select nonUserId, fcmToken from NonUser where isSignedUp = 'N' and isDeleted = 'N' and isNotified = 'Y';
         `;
         const [rows] = await connection.query(query);
         connection.release();
@@ -458,7 +458,7 @@ exports.getAllUserChallenge = async function (challengeId) {
         where u.isDeleted = 'N'
         and uc.isDeleted = 'N'
         and uc.challengeId = ?
-        and u.userType = 'G';
+        and u.userType = 'G' and isNotified = 'Y';
         `;
         const params = [challengeId];
         const [rows] = await connection.query(query, params);
@@ -480,7 +480,7 @@ exports.getAllUserLevel = async function (level) {
                 join UserLevel ul on u.userId = ul.userId
         where u.isDeleted = 'N'
         and ul.level = ?
-        and u.userType = 'G';
+        and u.userType = 'G' and isNotified = 'Y';
         `;
         const params = [level];
         const [rows] = await connection.query(query, params);
@@ -497,7 +497,7 @@ exports.getUserFcmToken = async function (userId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select userId, nickname, fcmToken from User where userId = ? and isDeleted = 'N' and userType = 'G';
+        select userId, nickname, fcmToken from User where userId = ? and isDeleted = 'N' and userType = 'G' and isNotified = 'Y';
         `;
         const params = [userId];
         const [rows] = await connection.query(query, params);
@@ -556,6 +556,40 @@ exports.patchUserFcm = async function (fcmToken, userId) {
         connection.release();
     } catch (err) {
         logger.error(`App - patchUserFcm DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+// 알림 여부 조회
+exports.getUserNotify = async function (state) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select isNotified from ` + state + `;
+        `;
+        const params = [state];
+        const [rows] = await connection.query(query, params);
+        connection.release();
+
+        return rows[0]['isNotified'];
+    } catch (err) {
+        logger.error(`App - getUserNotify DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+// 알림 여부 갱신
+exports.patchUserNotify = async function (state) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        update ` + state + `;
+        `;
+        const params = [state];
+        const [rows] = await connection.query(query, params);
+        connection.release();
+    } catch (err) {
+        logger.error(`App - patchUserNotify DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }

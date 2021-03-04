@@ -522,6 +522,47 @@ exports.nonUser = async function (req, res) {
     }
 }
 
+/***
+ * /***
+ * update : 2021-03-04
+ * 알림 여부 설정 API
+ */
+exports.setNotification = async function (req, res) {    
+    let token = req.headers['x-access-token'] || req.query.token;
+    const {
+        isNotified, nonUserId
+    } = req.body;
+
+    if (token === undefined & !nonUserId) return res.json(response.successFalse(2000, "비회원 Id를 입력해주세요."));
+    if (token) token = jwt.verify(token, secret_config.jwtsecret);
+    if (!isNotified) return res.json(response.successFalse(2010, "알림 여부를 입력해주세요."));
+
+    try {
+        // 비회원
+        if (token === undefined) {
+            const tmp = `NonUser set isNotified = '${isNotified}' where nonUserId = ` + nonUserId;
+            await userDao.patchUserNotify(tmp);
+
+            const state = 'NonUser where nonUserId = ' + nonUserId;
+            const status = await userDao.getUserNotify(state);
+
+            return res.json(response.successTrue(1000, "알림 여부 설정에 성공하였습니다.", {isNotified: status}));
+        // 회원
+        } else {
+            const tmp = `User set isNotified = '${isNotified}' where userId = ` + token.userId;
+            await userDao.patchUserNotify(tmp);
+
+            const state = 'User where userId = ' + token.userId;
+            const status = await userDao.getUserNotify(state);
+
+            return res.json(response.successTrue(1000, "알림 여부 설정에 성공하였습니다.", {isNotified: status}));
+        }        
+    } catch (err) {
+        logger.error(`App - setNotification Query error\n: ${JSON.stringify(err)}`);
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+    }
+}
+
 admin.initializeApp({
     credential: admin.credential.cert(serAccount)
 });

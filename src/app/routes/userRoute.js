@@ -20,6 +20,7 @@ module.exports = function(app){
     app.route('/user/password/change').post(jwtMiddleware, user.changePassword);
     app.route('/user/level').get(jwtMiddleware, user.userLevel);
     app.route('/user/question').post(user.userQuestion);
+    app.route('/user/notification').patch(user.setNotification);
     app.route('/non-user').post(user.nonUser);
     app.route('/push').get(user.fcmPush);
     app.route('/fcm').patch(user.updateFcm);
