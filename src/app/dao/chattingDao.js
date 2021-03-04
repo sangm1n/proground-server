@@ -560,16 +560,17 @@ exports.getFcmByChattingId = async function (chattingId) {
 /***
  * 채팅 시간
  */
-exports.getChattingTime = async function () {
+exports.getChattingTime = async function (userId, challengeId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select createdAt lastChatTime from Chatting where chattingId = last_insert_id() and isDeleted = 'N';
+        select createdAt from Chatting where userId = ? and challengeId = ? order by createdAt desc limit 1;
         `;
-        const [rows] = await connection.query(query);
+        const params = [userId, challengeId];
+        const [rows] = await connection.query(query, params);
         connection.release();
 
-        return rows[0]['lastChatTime'];
+        return rows[0]['createdAt'];
     } catch (err) {
         logger.error(`App - getChattingTime DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));

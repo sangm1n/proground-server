@@ -84,7 +84,7 @@ exports.makeChatting = async function (req, res) {
         else await chattingDao.postChatting(challengeId, userId, message, req.files[0].location);
 
         const lastReadTime = await chattingDao.getLastReadTime(userId, challengeId);
-        const lastChatTime = await chattingDao.getChattingTime();
+        const lastChatTime = await chattingDao.getChattingTime(userId, challengeId);
 
         const chattingRows = await chattingDao.getChatting(userId, challengeId);
 
