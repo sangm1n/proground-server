@@ -245,7 +245,7 @@ exports.getFcmByRunningId = async function (runningId) {
         select nickname, fcmToken
         from Running r join User u on r.userId = u.userId
         where runningId = ?
-        and r.isDeleted = 'N' and u.isDeleted = 'N';
+        and r.isDeleted = 'N' and u.isDeleted = 'N' and isNotified = 'Y';
         `;
         const params = [runningId];
         const [rows] = await connection.query(

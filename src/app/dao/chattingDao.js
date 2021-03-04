@@ -58,6 +58,7 @@ exports.getChatting = async function (userId, challengeId) {
                             group by parentChattingId) w on w.parentChattingId = c.chattingId
         where c.challengeId = ?
         and c.userId != ?
+        and uc.isDeleted = 'N'
         and u.isDeleted = 'N'
         and c.isDeleted = 'N'
         order by c.parentChattingId desc, c.createdAt desc;
@@ -542,7 +543,7 @@ exports.getFcmByChattingId = async function (chattingId) {
         select nickname, fcmToken
         from Chatting c join User u on c.userId = u.userId
         where chattingId = ?
-        and c.isDeleted = 'N' and u.isDeleted = 'N';
+        and c.isDeleted = 'N' and u.isDeleted = 'N' and isNotified = 'Y';
         `;
         const params = [chattingId];
         const [rows] = await connection.query(
