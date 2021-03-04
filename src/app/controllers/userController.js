@@ -146,11 +146,12 @@ exports.signUpAdd = async function (req, res) {
  */
 exports.logIn = async function (req, res) {
     const {
-        email, password
+        email, password, fcmToken
     } = req.body;
 
     if (!email) return res.json(response.successFalse(2020, "이메일을 입력해주세요."));
     if (!password) return res.json(response.successFalse(2030, "비밀번호를 입력해주세요."));
+    if (!fcmToken) return res.json(response.successFalse(2040, "fcm 토큰을 입력해주세요."));
 
     try {
         const emailRows = await userDao.checkUserEmail(email);
@@ -158,7 +159,7 @@ exports.logIn = async function (req, res) {
         const hashedPassword = await crypto.createHash('sha512').update(password).digest('hex');
 
         if (emailRows === 0 || hashedPassword !== userInfoRows.password) return res.json(response.successFalse(3014, "이메일 주소 혹은 비밀번호가 일치하지 않습니다."));
-
+        
         const token = await jwt.sign({
             userId: userInfoRows.userId
         },
@@ -167,6 +168,9 @@ exports.logIn = async function (req, res) {
             expiresIn: '365d',
             subject: 'userId'
         });
+
+        await userDao.patchUserFcm(fcmToken, userInfoRows.userId);        
+        logger.info(`${userInfoRows.userId}번 회원 fcmToken 갱신 완료`);
 
         const result = { jwt: token };
         return res.json(response.successTrue(1013, "로그인에 성공하였습니다.", result));
@@ -231,8 +235,10 @@ exports.check = async function (req, res) {
  */
 exports.logInKakao = async function (req, res) {
     const {
-        accessToken
+        accessToken, fcmToken
     } = req.body;
+
+    if (!fcmToken) return res.json(response.successFalse(2040, "fcm 토큰을 입력해주세요."));
 
     try {
         let kakao_profile;
@@ -266,6 +272,9 @@ exports.logInKakao = async function (req, res) {
                 expiresIn: '365d',
                 subject: 'userId'
             });
+
+            await userDao.patchUserFcm(fcmToken, userInfoRows.userId);        
+            logger.info(`${userInfoRows.userId}번 회원 fcmToken 갱신 완료`);
     
             const result = { jwt: token };
             return res.json(response.successTrue(1013, "소셜 로그인에 성공하였습니다.", result));
