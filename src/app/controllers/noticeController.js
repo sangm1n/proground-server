@@ -12,18 +12,22 @@ const noticeDao = require('../dao/noticeDao');
  * 전체 공지사항 조회 API
  */
 exports.allNotices = async function (req, res) {
-    let {
-        page, size
-    } = req.query;
+    let token = req.headers['x-access-token'] || req.query.token;
+    if (token) token = jwt.verify(token, secret_config.jwtsecret);
 
-    if (!page) return res.json(response.successFalse(2060, "페이지를 입력해주세요."));
-    if (!size) return res.json(response.successFalse(2070, "사이즈를 입력해주세요."));
-    if (page < 1) return res.json(response.successFalse(2061, "페이지 번호를 확인해주세요."));
+    const {
+        nonUserId
+    } = req.body;
 
-    try {
-        page = size * (page - 1);
-        
-        const noticeRows = await noticeDao.getAllNotices(page, size);
+    if (token === undefined & nonUserId == undefined) return res.json(response.successFalse(2000, "비회원 Id를 입력해주세요."));
+    try {   
+        let noticeRows;
+        // 비회원     
+        if (token === undefined) 
+            noticeRows = await noticeDao.getAllNotices(nonUserId, 'N');
+        else 
+            noticeRows = await noticeDao.getAllNotices(token.userId, 'Y');
+
 
         return res.json(response.successTrue(1400, "전체 공지사항 조회에 성공하였습니다.", noticeRows));
     } catch (err) {

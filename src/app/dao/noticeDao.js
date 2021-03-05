@@ -4,18 +4,29 @@ const { pool } = require("../../../config/database");
 /***
  * 전체 공지사항 조회
  */
-exports.getAllNotices = async function (page, size) {
+exports.getAllNotices = async function (userId, status) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select noticeId, title, content, date_format(createdAt, '%Y-%m-%d') as createdAt
+        select noticeId, title, content, banner, date_format(createdAt, '%Y-%m-%d') as createdAt
         from Notice
         where isDeleted = 'N'
-        order by createdAt
-        limit ` + page + `, ` + size + `;
+        order by createdAt;
         `;
-        const params = [page, size];
-        const [rows] = await connection.query(query, params);
+        let [rows] = await connection.query(query);
+
+        const find = `
+        select exists (select userId from UserNotice where userId = ? and noticeId = ? and isSignedUp = ?) as exist;
+        `;
+        for (var i = 0; i < rows.length; i++) {
+            let noticeId = rows[i].noticeId;
+            let params = [userId, noticeId, status];
+
+            let [check] = await connection.query(find, params);
+            
+            if (check[0].exist === 0) rows[i].isRead = 'N';
+            else rows[i].isRead = 'Y';
+        }
         connection.release();
 
         return rows;
