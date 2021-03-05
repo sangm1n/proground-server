@@ -593,3 +593,20 @@ exports.patchUserNotify = async function (state) {
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
+
+exports.checkLeader = async function (userId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select userType from User where userId = ?;
+        `;
+        const params = [userId];
+        const [rows] = await connection.query(query, params);
+        connection.release();
+
+        return rows[0]['userType'];
+    } catch (err) {
+        logger.error(`App - checkLeader DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
