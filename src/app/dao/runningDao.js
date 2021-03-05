@@ -259,3 +259,78 @@ exports.getFcmByRunningId = async function (runningId) {
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
+
+exports.getMissionInfo = async function (missionId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select cast(distance as double) as distance, time, nickname
+        from Mission m
+                join User u on leaderId = u.userId
+        where missionId = ?;
+        `;
+        const params = [missionId];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+
+        return rows[0];
+    } catch (err) {
+        logger.error(`App - getMissionInfo DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.setMissionComplete = async function (pace, userId, missionId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        update UserMission set complete = 'Y', pace = ? where userId = ? and missionId = ? and isDeleted = 'N';
+        `;
+        const params = [pace, userId, missionId];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+    } catch (err) {
+        logger.error(`App - setMissionComplete DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.getMaxDistance = async function (level) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select maxDistance from Level where level = ?;
+        `;
+        const params = [level];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+
+        return rows[0]['maxDistance'];
+    } catch (err) {
+        logger.error(`App - setMissionComplete DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.updateUserLevel = async function (level, userId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        update UserLevel set level = ? where userId = ?;
+        `;
+        const params = [level, userId];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+    } catch (err) {
+        logger.error(`App - updateUserLevel DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}

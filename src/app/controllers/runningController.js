@@ -6,8 +6,8 @@ const jwt = require('jsonwebtoken');
 const secret_config = require('../../../config/secret');
 
 const runningDao = require('../dao/runningDao');
-const challengeDao = require('../dao/challengeDao');
-const chattingDao = require('../dao/chattingDao');
+const activityDao = require('../dao/activityDao');
+const userDao = require('../dao/userDao');
 const notification = require('../../utils/notification');
 
 /***
@@ -16,18 +16,18 @@ const notification = require('../../utils/notification');
  */
 exports.recordRunning = async function (req, res) {
     let token = req.headers['x-access-token'] || req.query.token;
-    const {
-        nonUserId, distance, startTime, endTime, pace, altitude, calorie, section
+    let {
+        nonUserId, distance, startTime, endTime, pace, altitude, calorie, section, missionId
     } = req.body;
 
     if (token) token = jwt.verify(token, secret_config.jwtsecret);
-    if (token === undefined & nonUserId === undefined) return res.json(response.successFalse(2506, "비회원 Id를 입력해주세요."));
-    if (!distance) return res.json(response.successFalse(2500, "러닝 거리를 입력해주세요."));
+    if (token === undefined && nonUserId === undefined) return res.json(response.successFalse(2506, "비회원 Id를 입력해주세요."));
+    if (distance === undefined) return res.json(response.successFalse(2500, "러닝 거리를 입력해주세요."));
     if (!startTime) return res.json(response.successFalse(2501, "러닝 시작 시간을 입력해주세요."));
     if (!endTime) return res.json(response.successFalse(2502, "러닝 종료 시간을 입력해주세요."));
-    if (!pace) return res.json(response.successFalse(2503, "러닝 페이스를 입력해주세요."));
-    if (!altitude) return res.json(response.successFalse(2504, "러닝 고도를 입력해주세요."));
-    if (!calorie) return res.json(response.successFalse(2505, "러닝 소모 칼로리를 입력해주세요.")); 
+    if (pace === undefined) return res.json(response.successFalse(2503, "러닝 페이스를 입력해주세요."));
+    if (altitude === undefined) return res.json(response.successFalse(2504, "러닝 고도를 입력해주세요."));
+    if (calorie === undefined) return res.json(response.successFalse(2505, "러닝 소모 칼로리를 입력해주세요.")); 
 
     try {
         // 비회원
@@ -49,6 +49,7 @@ exports.recordRunning = async function (req, res) {
                 }
                 logger.info(`nonUserId ${nonUserId}번 구간 페이스 저장 완료`);
             }
+            
             return res.json(response.successTrue(1501, "비회원 러닝 기록에 성공하였습니다."));
         // 회원
         } else {
@@ -78,9 +79,40 @@ exports.recordRunning = async function (req, res) {
                         await runningDao.postRunningSection(runningId, distance, pace);
                     }
                 }
+                logger.info(`userId ${userId}번 구간 페이스 저장 완료`);
             }
-            logger.info(`userId ${userId}번 구간 페이스 저장 완료`);
-            return res.json(response.successTrue(1500, "회원 러닝 기록에 성공하였습니다."));
+            let result;
+            if (missionId) {
+                const timeDiff = (new Date(endTime) - new Date(startTime)) / 60000;
+                const missionRows = await runningDao.getMissionInfo(missionId);
+                if (distance >= missionRows.distance && timeDiff < missionRows.time) {
+                    await runningDao.setMissionComplete(pace, userId, missionId);
+                    mission = {
+                        distance: missionRows.distance,
+                        time: missionRows.time,
+                        leader: missionRows.nickname
+                    };
+                    logger.info(`${missionId}번 미션 달성 !`);
+
+                    result = {mission};
+                    
+                    const state = 'userId = ' + userId;
+                    const totalRows = await activityDao.getTotalRunning(state);
+                    let currentLevel = await userDao.getUserLevel(userId);
+                    currentLevel = currentLevel.level;
+                    const maxDistance = await runningDao.getMaxDistance(currentLevel);
+
+                    if (currentLevel < 9 && maxDistance <= totalRows[0].totalDistance.slice(0, -2)) {
+                        await runningDao.updateUserLevel(currentLevel+1, userId);
+                        nextLevel = 'Lv. ' + (currentLevel+1)
+                        result = {mission, level: nextLevel};
+
+                        logger.info(`레벨 업 !`);
+                    }
+                }
+            }
+
+            return res.json(response.successTrue(1500, "회원 러닝 기록에 성공하였습니다.", result));
         }
     } catch (err) {
         logger.error(`App - recordRunning Query error\n: ${err.message}`);
