@@ -303,7 +303,7 @@ exports.getMaxDistance = async function (level) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select maxDistance from Level where level = ?;
+        select maxDistance, maxMission from Level where level = ?;
         `;
         const params = [level];
         const [rows] = await connection.query(
@@ -311,7 +311,7 @@ exports.getMaxDistance = async function (level) {
         );
         connection.release();
 
-        return rows[0]['maxDistance'];
+        return rows[0];
     } catch (err) {
         logger.error(`App - setMissionComplete DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
@@ -331,6 +331,25 @@ exports.updateUserLevel = async function (level, userId) {
         connection.release();
     } catch (err) {
         logger.error(`App - updateUserLevel DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.countClearMission = async function (userId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select count(missionId) as countMission from UserMission where userId = ? and complete = 'Y' and isDeleted = 'N'
+        `;
+        const params = [userId];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+
+        return rows[0]['countMission'];
+    } catch (err) {
+        logger.error(`App - countClearMission DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }

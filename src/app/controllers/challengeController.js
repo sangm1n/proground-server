@@ -8,6 +8,7 @@ const secret_config = require('../../../config/secret');
 const challengeDao = require('../dao/challengeDao');
 const chattingDao = require('../dao/chattingDao');
 const runningDao = require('../dao/runningDao');
+const userDao = require('../dao/userDao');
 let maxChallenge = 2;
 
 /***
@@ -104,10 +105,13 @@ exports.challengeInfo = async function (req, res) {
             const checkMaxRows = await challengeDao.checkMaxChallenge(userId);
             const endDate = await challengeDao.challengeEndDate(challengeId);
             const countMembers = await challengeDao.getChallengeMembers(challengeId);
+            const checkLeader = await userDao.checkLeader(userId);
 
             if (checkRegRows === 1) {
                 status = 'C';
-            } else if (checkLevelRows === 0 || checkMaxRows > maxChallenge || endDate > new Date() || countMembers + 1 > challengeRows.personnel) {
+            } else if (checkLevelRows === 0 || checkMaxRows > maxChallenge 
+                || endDate > new Date() || countMembers + 1 > challengeRows.personnel 
+                || checkLeader === 'L') {
                 status = 'B';
             } else {
                 status = 'A';
