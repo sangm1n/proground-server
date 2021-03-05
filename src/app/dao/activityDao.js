@@ -152,7 +152,7 @@ exports.getCardHistory = async function (userId) {
             title,
             subTitle,
             cardImage,
-            userName,
+            nickname,
             profileImage,
             date_format(uc.createdAt, '%Y.%m.%d') as createdAt
         from Card c

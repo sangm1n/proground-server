@@ -409,7 +409,7 @@ exports.getStatsInfo = async function (userId, challengeId, page, size) {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
         select r.userId,
-            v.userName,
+            v.nickname,
             v.profileImage,
             v.levelColor,
             v.challengeTeamName,
@@ -417,7 +417,7 @@ exports.getStatsInfo = async function (userId, challengeId, page, size) {
             ifnull(sum(w.likeCount), 0) as likeCount,
             if(r.userId = ?, 'Y', 'N') as myself
         from Running r
-                join (select uc.userId, userName, x.levelColor, uc.isDeleted, challengeTeamName, profileImage
+                join (select uc.userId, nickname, x.levelColor, uc.isDeleted, challengeTeamName, profileImage
                     from User u
                                 join UserChallenge uc on u.userId = uc.userId
                                 join (select ul.userId, levelColor
@@ -459,14 +459,14 @@ exports.getGoalStatsInfo = async function (userId, challengeId, page, size) {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
         select r.userId,
-            v.userName,
+            v.nickname,
             v.profileImage,
             v.levelColor,
             cast(sum(distance) as double) as distance,
             ifnull(sum(w.likeCount), 0) as likeCount,
             if(r.userId = ?, 'Y', 'N') as myself
         from Running r
-                join (select uc.userId, userName, x.levelColor, uc.isDeleted, challengeTeamName, profileImage
+                join (select uc.userId, nickname, x.levelColor, uc.isDeleted, challengeTeamName, profileImage
                     from User u
                                 join UserChallenge uc on u.userId = uc.userId
                                 join (select ul.userId, levelColor
@@ -509,7 +509,7 @@ exports.getStatsTotalInfo = async function (userId, challengeId, page, size) {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
         select r.userId,
-            v.userName,
+            v.nickname,
             v.profileImage,
             v.levelColor,
             v.challengeTeamName,
@@ -517,7 +517,7 @@ exports.getStatsTotalInfo = async function (userId, challengeId, page, size) {
             ifnull(sum(w.likeCount), 0) as likeCount,
             if(r.userId = ?, 'Y', 'N') as myself
         from Running r
-                join (select uc.userId, userName, x.levelColor, uc.isDeleted, challengeTeamName, profileImage
+                join (select uc.userId, nickname, x.levelColor, uc.isDeleted, challengeTeamName, profileImage
                     from User u
                                 join UserChallenge uc on u.userId = uc.userId
                                 join (select ul.userId, levelColor
@@ -557,14 +557,14 @@ exports.getGoalStatsTotalInfo = async function (userId, challengeId, page, size)
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
         select r.userId,
-            v.userName,
+            v.nickname,
             v.profileImage,
             v.levelColor,
             cast(sum(distance) as double) as distance,
             ifnull(sum(w.likeCount), 0) as likeCount,
             if(r.userId = ?, 'Y', 'N') as myself
         from Running r
-                join (select uc.userId, userName, x.levelColor, uc.isDeleted, challengeTeamName, profileImage
+                join (select uc.userId, nickname, x.levelColor, uc.isDeleted, challengeTeamName, profileImage
                     from User u
                                 join UserChallenge uc on u.userId = uc.userId
                                 join (select ul.userId, levelColor
@@ -746,14 +746,14 @@ exports.getGoalGraphToday = async function (userId, challengeId) {
         const connection = await pool.getConnection(async (conn) => conn);
         let query = `
         select u.userId, 
-            v.userName, 
+            v.nickname, 
             v.profileImage, 
             v.levelColor, 
             cast(ifnull(w.distance, 0.00) as double) as distance, 
             cast(ifnull(sum(u.likeCount), 0) as double) as likeCount
         from Running r
             join User u
-            join (select uc.userId, userName, x.levelColor, uc.isDeleted, challengeTeamName, profileImage
+            join (select uc.userId, nickname, x.levelColor, uc.isDeleted, challengeTeamName, profileImage
                 from User u
                             join UserChallenge uc on u.userId = uc.userId
                             join (select ul.userId, levelColor
@@ -849,14 +849,14 @@ exports.getGoalGraphTotal = async function (userId, challengeId) {
         const connection = await pool.getConnection(async (conn) => conn);
         let query = `
         select r.userId,
-            v.userName,
+            v.nickname,
             cast(ifnull(round((w.distance / c.distance) * 100, 1), 0.00) as double) as ratio,
             cast(ifnull(round(w.distance, 1), 0.00) as double)                      as distance,
             cast(ifnull(sum(u.likeCount), 0) as double) as likeCount
         from Running r
                 join User u
                 join Challenge c on r.challengeId = c.challengeId
-                join (select uc.userId, userName, uc.isDeleted, challengeTeamName, profileImage
+                join (select uc.userId, nickname, uc.isDeleted, challengeTeamName, profileImage
                     from User u
                                 join UserChallenge uc on u.userId = uc.userId
                     where u.isDeleted = 'N'
@@ -893,7 +893,7 @@ exports.getGoalGraphTotal = async function (userId, challengeId) {
             cast(ifnull(sum(u.likeCount), 0) as double) as likeCount
         from Running r
                 join Challenge c on r.challengeId = c.challengeId
-                join (select uc.userId, userName, uc.isDeleted, challengeColor, challengeTeamName, profileImage
+                join (select uc.userId, nickname, uc.isDeleted, challengeColor, challengeTeamName, profileImage
                     from User u
                                 join UserChallenge uc on u.userId = uc.userId
                     where u.isDeleted = 'N'
