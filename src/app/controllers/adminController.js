@@ -141,12 +141,12 @@ exports.createMission = async function (req, res) {
 exports.modifyLevel = async function (req, res) {
     const userId = req.verifiedToken.userId;
     const {
-        maxDistance, maxCard, levelColor
+        maxDistance, maxMission, levelColor
     } = req.body;
 
-    if (maxDistance.length !== 9 || maxCard.length !== 9 || levelColor.length !== 9) return res.json(response.successFalse(2000, "모든 값은 배열에 9개씩 입력해주세요."));
+    if (maxDistance.length !== 9 || maxMission.length !== 9 || levelColor.length !== 9) return res.json(response.successFalse(2000, "모든 값은 배열에 9개씩 입력해주세요."));
     for (var i = 0; i < 9; i++) {
-        if (maxDistance[i] < 0 || maxCard[i] < 0) return res.json(response.successFalse(2010, "배열에 음수는 올 수 없습니다."));
+        if (maxDistance[i] < 0 || maxMission[i] < 0) return res.json(response.successFalse(2010, "배열에 음수는 올 수 없습니다."));
         if (levelColor[i] !== null && (levelColor[i].length !== 7 || levelColor[i].substr(0, 1) !== '#')) return res.json(response.successFalse(2020, "레벨 색상은 #?????? 형식으로 입력해주세요."));
     }
     try {
@@ -159,8 +159,8 @@ exports.modifyLevel = async function (req, res) {
             if (maxDistance[i] !== null) {
                 await adminDao.changeMaxDistance(level, maxDistance[i]);
             }
-            if (maxCard[i] !== null) {
-                await adminDao.changeMaxCard(level, maxCard[i]);
+            if (maxMission[i] !== null) {
+                await adminDao.changeMaxMission(level, maxMission[i]);
             }
             if (levelColor[i] !== null) {
                 await adminDao.changeLevelColor(level, levelColor[i]);

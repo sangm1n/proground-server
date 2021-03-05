@@ -174,18 +174,18 @@ exports.changeMaxDistance = async function (level, maxDistance) {
     }
 }
 
-// maxCard 변경
-exports.changeMaxCard = async function (level, maxCard) {
+// maxMission 변경
+exports.changeMaxMission = async function (level, maxMission) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        update Level set maxCard = ? where level = ?;
+        update Level set maxMission = ? where level = ?;
         `;
-        const params = [maxCard, level];
+        const params = [maxMission, level];
         await connection.query(query, params);
         connection.release();
     } catch (err) {
-        logger.error(`App - changeMaxCard DB Connection error\n: ${err.message}`);
+        logger.error(`App - changeMaxMission DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
