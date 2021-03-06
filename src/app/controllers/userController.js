@@ -59,10 +59,10 @@ exports.signUp = async function (req, res) {
         logger.info(`비회원 ${nonUserId} 회원으로 변경 완료`);
 
         if (status == 'S') {
-            await userDao.postUserInfo(name, email, '', nickname, height, weight, gender, status, fcmToken);
+            await userDao.postUserInfo(nonUserId, name, email, '', nickname, height, weight, gender, status, fcmToken);
         } else if (status == 'G') {
             const hashedPassword = await crypto.createHash('sha512').update(password).digest('hex');
-            await userDao.postUserInfo(name, email, hashedPassword, nickname, height, weight, gender, status, fcmToken);
+            await userDao.postUserInfo(nonUserId, name, email, hashedPassword, nickname, height, weight, gender, status, fcmToken);
         }
         logger.info(`회원가입 완료`);
 

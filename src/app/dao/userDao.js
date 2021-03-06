@@ -64,13 +64,13 @@ exports.checkUserNickname = async function (nickname) {
 }
 
 // 사용자 정보 입력
-exports.postUserInfo = async function (name, email, password, nickname, height, weight, gender, loginStatus, fcmToken) {
+exports.postUserInfo = async function (nonUserId, name, email, password, nickname, height, weight, gender, loginStatus, fcmToken) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        insert into User (userName, email, password, nickname, height, weight, gender, loginStatus, fcmToken) values (?, ?, ?, ?, ?, ?, ?, ?, ?);
+        insert into User (nonUserId, userName, email, password, nickname, height, weight, gender, loginStatus, fcmToken) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         `
-        const params = [name, email, password, nickname, height, weight, gender, loginStatus, fcmToken];
+        const params = [nonUserId, name, email, password, nickname, height, weight, gender, loginStatus, fcmToken];
         const [rows] = await connection.query(
             query, params
         );
