@@ -182,14 +182,14 @@ exports.getChallengeHistory = async function (userId) {
         const query = `
         select c.challengeId,
             image,
-            concat(challengeName, ' with ', w.nickname) as challengeName,
+            if(challengeType = 'B', concat(challengeName, ' with ', w.nickname), challengeName) as challengeName,
             minLevel,
             maxLevel,
             c.distance,
-            cast(v.distance as double)                       as totalDistance,
-            if(challengeType = 'A', '목표달성', '경쟁전')      as challengeType,
-            date_format(startDate, '%y.%m.%d')          as startDate,
-            date_format(endDate, '%y.%m.%d')            as endDate
+            cast(ifnull(v.distance, 0) as double)                                               as totalDistance,
+            if(challengeType = 'A', '목표달성', '경쟁전')                                              as challengeType,
+            date_format(startDate, '%y.%m.%d')                                                  as startDate,
+            date_format(endDate, '%y.%m.%d')                                                    as endDate
         from Challenge c
                 join UserChallenge uc on c.challengeId = uc.challengeId
                 join (select u.userId, nickname, uc.challengeId
@@ -197,11 +197,13 @@ exports.getChallengeHistory = async function (userId) {
                                 join UserChallenge uc on u.userId = uc.userId
                     where u.isDeleted = 'N') w
                     on c.challengeId = w.challengeId
-                join (select runningId, challengeId, userId, sum(distance) as distance
-                    from Running
-                    where userId = ? and isDeleted = 'N'
-                    group by challengeId) v on c.challengeId = v.challengeId
+                left join (select runningId, challengeId, userId, sum(distance) as distance
+                            from Running
+                            where userId = ?
+                            and isDeleted = 'N'
+                            group by challengeId) v on c.challengeId = v.challengeId
         where c.isDeleted = 'N'
+        and uc.winStatus = 'W'
         and uc.isDeleted = 'N'
         and uc.userId = ?
         and endDate < str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H')

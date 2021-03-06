@@ -33,7 +33,7 @@ exports.getAllChallenges = async function (page, size) {
                         minLevel,
                         maxLevel,
                         personnel,
-                        if(challengeType = 'A', concat(challengeName, ' with ', nickname), challengeName) as challengeName,
+                        if(challengeType = 'B', concat(challengeName, ' with ', nickname), challengeName) as challengeName,
                         if(challengeType = 'A', '목표달성', '경쟁전')                                            as challengeType,
                         distance,
                         timestampdiff(day, startDate, endDate)                                            as period,
@@ -148,7 +148,7 @@ exports.getChallenge = async function (challengeId) {
             personnel,
             minLevel,
             maxLevel,
-            (endDate - startDate)                  as period,
+            timestampdiff(day, startDate, endDate) + 1                  as period,
             timestampdiff(day, now(), startDate)   as beforeDate,
             date_format(startDate, '%Y.%c.%e')     as startDate,
             date_format(endDate, '%Y.%c.%e')       as endDate
@@ -649,7 +649,7 @@ exports.getCompetitionGraphToday = async function (challengeId) {
         let [secondRows] = await connection.query(query, params);    
         
         query = `
-        select distance, personnel, (endDate-startDate+1) as period from Challenge where challengeId = ?;
+        select distance, personnel, timestampdiff(day, startDate, endDate) + 1 as period from Challenge where challengeId = ?;
         `
         let [thirdRows] = await connection.query(query, params);
 
@@ -718,7 +718,7 @@ exports.getCompetitionGraphTotal = async function (challengeId) {
         const [secondRows] = await connection.query(query, params);
 
         query = `
-        select distance, personnel, (endDate-startDate+1) as period from Challenge where challengeId = ?;
+        select distance, personnel, timestampdiff(day, startDate, endDate) + 1 as period from Challenge where challengeId = ?;
         `
         let [thirdRows] = await connection.query(query, params);
 
@@ -818,7 +818,7 @@ exports.getGoalGraphToday = async function (userId, challengeId) {
         const [secondRows] = await connection.query(query, params);
 
         query = `
-        select distance, personnel, (endDate-startDate+1) as period from Challenge where challengeId = ?;
+        select distance, personnel, timestampdiff(day, startDate, endDate) + 1 as period from Challenge where challengeId = ?;
         `
         let [thirdRows] = await connection.query(query, params);
 
@@ -919,7 +919,7 @@ exports.getGoalGraphTotal = async function (userId, challengeId) {
         const [secondRows] = await connection.query(query, params);
 
         query = `
-        select distance, personnel, (endDate-startDate+1) as period from Challenge where challengeId = ?;
+        select distance, personnel, timestampdiff(day, startDate, endDate) + 1 as period from Challenge where challengeId = ?;
         `
         let [thirdRows] = await connection.query(query, params);
 
@@ -939,6 +939,88 @@ exports.getGoalGraphTotal = async function (userId, challengeId) {
         return [firstRows[0], secondRows[0]];
     } catch (err) {
         logger.error(`App - getGoalGraphTotal DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+// 오늘 마감인 챌린지
+exports.todayChallenge = async function (endDate) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select challengeId from Challenge where endDate = ?;
+        `;
+        const params = [endDate];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+
+        return rows;
+    } catch (err) {
+        logger.error(`App - todayChallenge DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+// 상태 변경
+exports.challengeResult = async function (challengeId, status) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        update UserChallenge set winStatus = ? where challengeId = ? and challengeColor is not null and isDeleted = 'N';
+        `;
+        const params = [status, challengeId];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+
+        return rows;
+    } catch (err) {
+        logger.error(`App - challengeResult DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+// 챌린지 달성 여부 비교
+exports.challengeStatus = async function (challengeId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        let query = `
+        select distance
+        from Challenge
+        where challengeId = ?
+        and isDeleted = 'N';
+        `;
+        let params = [challengeId];
+        const [distance] = await connection.query(query, params);
+
+        query = `
+        select v.totalDistance + x.totalDistance as totalDistance
+        from (select cast(ifnull(sum(distance), 0) as double) as totalDistance
+            from Running r
+                    join NonUser nu on r.nonUserId = nu.nonUserId
+            where isSignedUp = 'N'
+                and r.isDeleted = 'N'
+                and nu.isDeleted = 'N'
+                and challengeId = ?) v,
+            (select cast(ifnull(sum(distance), 0) as double) as totalDistance
+            from Running r
+                    join User u on r.userId = u.userId
+            where u.userType = 'G'
+                and r.isDeleted = 'N'
+                and u.isDeleted = 'N'
+                and challengeId = ?) x;
+        `;
+        params = [challengeId, challengeId];
+        const [totalDistance] = await connection.query(query, params);
+
+        connection.release();
+
+        return {distance: distance[0]['distance'], totalDistance: totalDistance[0]['totalDistance']};
+    } catch (err) {
+        logger.error(`App - challengeStatus DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }

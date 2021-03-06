@@ -3,6 +3,7 @@ const {logger} = require('./config/winston');
 
 const schedule = require('node-schedule');
 const runningDao = require('./src/app/dao/runningDao');
+const challengeDao = require('./src/app/dao/challengeDao');
 const userDao = require('./src/app/dao/userDao');
 const notification = require('./src/utils/notification');
 
@@ -25,6 +26,28 @@ schedule.scheduleJob('0 0 18 * * *', async function() {
         if (totalFcmRows[i].fcmToken !== null) {
             notification('[프로그라운드]', `헛둘헛둘! 오늘 ${countRows.runningCount}명이 달렸어요! 🏃🏻`, totalFcmRows[i].fcmToken);
         }
+    }
+})
+
+schedule.scheduleJob('0 0 0 * * *', async function() {
+    
+    let now = new Date();
+    let today = now.getFullYear()+ '-' + (now.getMonth()+1).toString().padStart(2,'0') + '-' + now.getDate().toString().padStart(2,'0');
+    let yesterday = new Date(now.setDate(now.getDate() - 1));
+    yesterday = yesterday.getFullYear()+ '-' + (yesterday.getMonth()+1).toString().padStart(2,'0') + '-' + yesterday.getDate().toString().padStart(2,'0');
+
+    const challengeRows = await challengeDao.todayChallenge(yesterday);
+    for (var i = 0; i < challengeRows.length; i++) {
+        logger.info('현재 ' + new Date());
+
+        let challengeId = challengeRows[i].challengeId;
+        let compareRows = await challengeDao.challengeStatus(challengeId);
+        let totalDistance = compareRows.totalDistance;
+        let challengeDistance = compareRows.distance;
+
+        if (totalDistance >= challengeDistance) await challengeDao.challengeResult(challengeId, 'Y');
+        else await challengeDao.challengeResult(challengeId, 'N');
+        logger.info(`${challengeId}번 챌린지 종료 - 승리 여부 저장 완료`);
     }
 })
 
