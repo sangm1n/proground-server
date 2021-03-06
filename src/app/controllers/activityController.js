@@ -6,6 +6,8 @@ const jwt = require('jsonwebtoken');
 const secret_config = require('../../../config/secret');
 
 const activityDao = require('../dao/activityDao');
+const runningDao = require('../dao/runningDao');
+const userDao = require('../dao/userDao');
 let maxValue = 10;
 
 /***
@@ -44,11 +46,21 @@ exports.runningStatistic = async function (req, res) {
             const state = "userId = " + userId;
             const recentRows = await activityDao.getRecentRunning(state, maxValue);
             const totalRows = await activityDao.getTotalRunning(state);
+            const randomRows = await activityDao.getRandomStatement();
+
+            const currentLevel = await userDao.getUserLevel(userId);  
+            const countMission = await runningDao.countClearMission(userId);
+            const levelLimit = await runningDao.getMaxDistance(currentLevel.level);
+
+            const X = levelLimit.maxDistance - parseFloat(totalRows[0].totalDistance.slice(0, -2), 2);
+            const Y = levelLimit.maxMission - countMission + 1;
 
             const result = {
                 weekly: {
                     totalDistance: recentRows[0].totalDistance,
-                    runningGraph: recentRows[1]
+                    runningGraph: recentRows[1],
+                    randomSentence: randomRows[Math.floor(Math.random() * randomRows.length)].text,
+                    staticSentence: `다음 레벨까지 ${X}km와 미션 ${Y}개 남았어요!`
                 },
                 total: totalRows[0]
             }
