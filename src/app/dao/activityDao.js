@@ -299,3 +299,20 @@ exports.getMissionHistory = async function (userId) {
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
+
+// 랜덤 문구
+exports.getRandomStatement = async function () {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select textId, text from Text;
+        `;
+        const [rows] = await connection.query(query);
+        connection.release();
+
+        return rows;
+    } catch (err) {
+        logger.error(`App - getRandomStatement DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
