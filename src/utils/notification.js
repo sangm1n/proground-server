@@ -11,7 +11,6 @@ const pushModule = async function (title, body, token) {
 
     console.log(`${token}에 "${title}" 푸시 성공`)
 
-    /*
     admin
         .messaging()
         .send(message)
@@ -21,7 +20,6 @@ const pushModule = async function (title, body, token) {
         .catch(function (err) {
             console.log(err);
         });
-    */
 };
 
 module.exports = pushModule;
