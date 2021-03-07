@@ -63,8 +63,8 @@ exports.createChallenge = async function (req, res) {
     }
 
     try {
-        const checkRows = await adminDao.checkAdmin(userId);
-        if (checkRows === 0) return res.json(response.successFalse(3000, "관리자가 아닙니다."));
+        const checkRows = await adminDao.checkLeader(userId);
+        if (checkRows === 0) return res.json(response.successFalse(3000, "리더가 아닙니다."));
 
         const image = req.file.location;
         // 목표달성
@@ -116,8 +116,8 @@ exports.createMission = async function (req, res) {
     if (!endDate) return res.json(response.successFalse(2030, "미션 시작 일자를 입력해주세요."));
     
     try {
-        const checkRows = await adminDao.checkAdmin(userId);
-        if (checkRows === 0) return res.json(response.successFalse(3000, "관리자가 아닙니다."));
+        const checkRows = await adminDao.checkLeader(userId);
+        if (checkRows === 0) return res.json(response.successFalse(3000, "리더가 아닙니다."));
 
         const nicknameCheck = await adminDao.checkNickname(nickname);
         if (nicknameCheck === 0) return res.json(response.successFalse(3010, "존재하지 않는 닉네임이거나 리더가 아닙니다."));
@@ -236,8 +236,8 @@ exports.spreadChallenge = async function (req, res) {
     if (!type || (type !== "mission" && type !== "card")) return res.json(response.successFalse(2020, "올바른 타입을 입력해주세요.")); 
     
     try {
-        const adminRows = await adminDao.checkAdmin(userId);
-        if (adminRows === 0) return res.json(response.successFalse(3000, "관리자가 아닙니다."));
+        const adminRows = await adminDao.checkLeader(userId);
+        if (adminRows === 0) return res.json(response.successFalse(3000, "리더가 아닙니다."));
 
         const checkRows = await challengeDao.checkChallenge(challengeId);
         if (checkRows === 0) return res.json(response.successFalse(3010, "존재하지 않는 챌린지입니다."));
@@ -287,8 +287,8 @@ exports.spreadLevel = async function (req, res) {
     if (!type || (type !== "mission" && type !== "card")) return res.json(response.successFalse(2020, "올바른 타입을 입력해주세요.")); 
     
     try {
-        const checkRows = await adminDao.checkAdmin(userId);
-        if (checkRows === 0) return res.json(response.successFalse(3000, "관리자가 아닙니다."));
+        const checkRows = await adminDao.checkLeader(userId);
+        if (checkRows === 0) return res.json(response.successFalse(3000, "리더가 아닙니다."));
 
         if (level < 0 || level > 9) return res.json(response.successFalse(3010, "레벨은 1~9까지만 존재합니다."));
 
@@ -337,8 +337,8 @@ exports.spreadUser = async function (req, res) {
     if (!type || (type !== "mission" && type !== "card")) return res.json(response.successFalse(2020, "올바른 타입을 입력해주세요.")); 
     
     try {
-        const checkRows = await adminDao.checkAdmin(uuserId);
-        if (checkRows === 0) return res.json(response.successFalse(3000, "관리자가 아닙니다."));
+        const checkRows = await adminDao.checkLeader(uuserId);
+        if (checkRows === 0) return res.json(response.successFalse(3000, "리더가 아닙니다."));
 
         const profileRows = await userDao.getUserProfile(userId);
         if (profileRows === undefined) return res.json(response.successFalse(3010, "존재하지 않는 사용자입니다."));
