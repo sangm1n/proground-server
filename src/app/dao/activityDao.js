@@ -227,7 +227,16 @@ exports.getRecommendedMission = async function (userId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select m.missionId, cast(distance as double) as distance, time, leaderId, nickname, profileImage, timestampdiff(day, now(), endDate) + 1 as date
+        select distinct m.missionId,
+                        cast(distance as double)                                     as distance,
+                        time,
+                        leaderId,
+                        nickname,
+                        profileImage,
+                        concat(timestampdiff(day, now(), endDate) + 1, '일 ',
+                            floor(if(timestampdiff(hour, now(), endDate) > 24,
+                                        timestampdiff(hour, now(), endDate) / (timestampdiff(day, now(), endDate) + 1),
+                                        timestampdiff(hour, now(), endDate))), '시간') as endTime
         from Mission m
                 join UserMission um on m.missionId = um.missionId
                 join User u on m.leaderId = u.userId
@@ -238,8 +247,7 @@ exports.getRecommendedMission = async function (userId) {
         and um.complete = 'N';
         `;
         const params = [userId];
-        const [rows] = await connection.query(query, params);
-
+        let [rows] = await connection.query(query, params);
         connection.release();
 
         return rows;

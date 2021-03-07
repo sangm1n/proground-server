@@ -261,3 +261,42 @@ exports.postUserCard = async function (userId, cardId) {
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
+
+exports.getMissionInfo = async function () {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select userId,
+            missionId,
+            createdAt,
+            timestampdiff(day, str_to_date(date_format(createdAt, '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H'),
+                            str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H')) as diff
+        from UserMission
+        where isDeleted = 'N'
+        and timestampdiff(day, str_to_date(date_format(createdAt, '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H'),
+                            str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H')) >= 14;
+        `;
+        const [rows] = await connection.query(query);
+        connection.release();
+
+        return rows;
+    } catch (err) {
+        logger.error(`App - getMissionInfo DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.updateUserMission = async function (userId, missionId, createdAt) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        update UserMission set isDeleted = 'Y' where userId = ? and missionId = ? and createdAt = ?;
+        `;
+        const params = [userId, missionId, createdAt];
+        const [rows] = await connection.query(query, params);
+        connection.release();
+    } catch (err) {
+        logger.error(`App - updateUserMission DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}

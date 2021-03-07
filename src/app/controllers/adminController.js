@@ -113,7 +113,7 @@ exports.createMission = async function (req, res) {
     if (!nickname) return res.json(response.successFalse(2000, "리더 닉네임을 입력해주세요."));
     if (!distance) return res.json(response.successFalse(2010, "미션 목표 거리를 입력해주세요."));
     if (!time) return res.json(response.successFalse(2020, "미션 목표 시간을 입력해주세요."));
-    if (!endDate) return res.json(response.successFalse(2030, "미션 마감 일자를 입력해주세요."));
+    if (!endDate) return res.json(response.successFalse(2030, "미션 시작 일자를 입력해주세요."));
     
     try {
         const checkRows = await adminDao.checkAdmin(userId);
@@ -156,15 +156,9 @@ exports.modifyLevel = async function (req, res) {
         for (var i = 0; i < 9; i++) {
             let level = i+1;
 
-            if (maxDistance[i] !== null) {
-                await adminDao.changeMaxDistance(level, maxDistance[i]);
-            }
-            if (maxMission[i] !== null) {
-                await adminDao.changeMaxMission(level, maxMission[i]);
-            }
-            if (levelColor[i] !== null) {
-                await adminDao.changeLevelColor(level, levelColor[i]);
-            }
+            if (maxDistance[i] !== null) await adminDao.changeMaxDistance(level, maxDistance[i]);
+            if (maxMission[i] !== null) await adminDao.changeMaxMission(level, maxMission[i]);
+            if (levelColor[i] !== null) await adminDao.changeLevelColor(level, levelColor[i]);
             logger.info(`레벨 ${level} 조정 완료`);
         }
 
