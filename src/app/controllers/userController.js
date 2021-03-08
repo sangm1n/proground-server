@@ -235,7 +235,7 @@ exports.check = async function (req, res) {
  */
 exports.logInKakao = async function (req, res) {
     const {
-        accessToken, fcmToken
+        accessToken, fcmToken, nonUserId
     } = req.body;
 
     if (!fcmToken) return res.json(response.successFalse(2040, "fcm 토큰을 입력해주세요."));
@@ -280,10 +280,13 @@ exports.logInKakao = async function (req, res) {
             return res.json(response.successTrue(1013, "소셜 로그인에 성공하였습니다.", result));
         // 그렇지 않은 경우 -> 회원가입 처리
         } else {
+            if (!nonUserId) return res.json(response.successFalse(2010, "비회원 Id를 입력해주세요."));
+
             const result = {
                 name: name,
                 email: email,
-                loginStatus: 'S'
+                loginStatus: 'S',
+                nonUserId: nonUserId
             };
             return res.json(response.successTrue(1011, "회원가입 가능합니다.", result));
         }
