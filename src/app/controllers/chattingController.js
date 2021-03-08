@@ -68,9 +68,7 @@ exports.makeChatting = async function (req, res) {
     const userId = req.verifiedToken.userId;
     const {challengeId} = req.params;
     let message = req.body.message;
-
-    if (message === undefined & req.files === undefined) return res.json(response.successFalse(2200, "채팅을 입력해주세요.")); 
-    if (message === undefined) message = null;    
+    if ((message === undefined || (message !== undefined && message.trim().length === 0)) && req.file === undefined) return res.json(response.successFalse(2200, "채팅을 입력해주세요.")); 
     if (!challengeId) return res.json(response.successFalse(2100, "챌린지 번호를 입력해주세요."));
 
     try {
@@ -80,8 +78,8 @@ exports.makeChatting = async function (req, res) {
         if (challengeRows === 0) return res.json(response.successFalse(3100, "존재하지 않는 챌린지입니다."));
         if (checkRows === 0) return res.json(response.successFalse(3101, "현재 참가중인 챌린지가 아닙니다."));
 
-        if (req.files.length < 1) await chattingDao.postChatting(challengeId, userId, message);
-        else await chattingDao.postChatting(challengeId, userId, message, req.files[0].location);
+        if (req.file === undefined) await chattingDao.postChatting(challengeId, userId, message);
+        else await chattingDao.postChatting(challengeId, userId, null, req.file.location);
 
         const lastReadTime = await chattingDao.getLastReadTime(userId, challengeId);
         const lastChatTime = await chattingDao.getChattingTime(userId, challengeId);
@@ -148,8 +146,7 @@ exports.makeComment = async function (req, res) {
     const {chattingId} = req.params;
     let message = req.body.message;
 
-    if (message === undefined & req.files === undefined) return res.json(response.successFalse(2200, "채팅을 입력해주세요.")); 
-    if (message === undefined) message = null;    
+    if ((message === undefined || (message !== undefined && message.trim().length === 0)) && req.file === undefined) return res.json(response.successFalse(2200, "채팅을 입력해주세요.")); 
     if (!chattingId) return res.json(response.successFalse(2100, "채팅 번호를 입력해주세요."));
 
     try {
@@ -158,8 +155,8 @@ exports.makeComment = async function (req, res) {
 
         const challengeId = await chattingDao.getChallengeId(chattingId);
 
-        if (req.files.length < 1) await chattingDao.postChatting(challengeId, userId, message, undefined, chattingId);
-        else await chattingDao.postChatting(challengeId, userId, message, req.files[0].location, chattingId);
+        if (req.file === undefined) await chattingDao.postChatting(challengeId, userId, message, null, chattingId);
+        else await chattingDao.postChatting(challengeId, userId, null, req.file.location, chattingId);
 
         const tmpRows = await chattingDao.getFcmByChattingId(chattingId);
         notification('[프로그라운드]', `똑똑! ${tmpRows.nickname} 님의 채팅에 댓글💬 이 달렸어요!`, tmpRows.fcmToken);
