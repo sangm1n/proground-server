@@ -154,13 +154,16 @@ exports.makeComment = async function (req, res) {
         if (checkRows === 0) return res.json(response.successFalse(3100, "존재하지 않는 채팅입니다."));
 
         const challengeId = await chattingDao.getChallengeId(chattingId);
+        const chattingUserId = await chattingDao.getUserIdByChattingId(chattingId);
 
         if (req.file === undefined) await chattingDao.postChatting(challengeId, userId, message, null, chattingId);
         else await chattingDao.postChatting(challengeId, userId, null, req.file.location, chattingId);
 
-        const tmpRows = await chattingDao.getFcmByChattingId(chattingId);
-        notification('[프로그라운드]', `똑똑! ${tmpRows.nickname} 님의 채팅에 댓글💬 이 달렸어요!`, tmpRows.fcmToken);
-
+        if (chattingUserId.userId !== userId) {
+            const tmpRows = await chattingDao.getFcmByChattingId(chattingId);
+            notification('[프로그라운드]', `똑똑! ${tmpRows.nickname} 님의 채팅에 댓글💬 이 달렸어요!`, tmpRows.fcmToken);
+        }
+        
         const challengeType = await challengeDao.getChallengeType(challengeId);
         const chattingRows = await chattingDao.getEachChatting(chattingId, challengeType);
         logger.info(`채팅 ${chattingId}번 - 개별 채팅 조회 완료`);
