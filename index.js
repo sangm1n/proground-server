@@ -1,5 +1,7 @@
 const express = require('./config/express');
 const {logger} = require('./config/winston');
+const moment = require('moment');
+require('moment-timezone');
 
 const schedule = require('node-schedule');
 const runningDao = require('./src/app/dao/runningDao');
@@ -15,6 +17,8 @@ if (process.env.NODE_ENV === 'development') {
 } else if (process.env.NODE_ENV === 'production') {
     port = 3001;
 }
+
+moment.tz.setDefault("Asia/Seoul");
 
 schedule.scheduleJob('0 0 18 * * *', async function() {
     console.log('현재 ' + new Date());
