@@ -171,8 +171,8 @@ exports.likeRunning = async function (req, res) {
         logger.info(`${runningId}번 러닝에 좋아요 클릭 완료`);
 
         const runningUserId = await runningDao.getUserIdByRunningId(runningId);
-        if (runningUserId.userId !== userId) {
-            const tmpRows = await runningDao.getFcmByRunningId(runningId);
+        const tmpRows = await runningDao.getFcmByRunningId(runningId);
+        if (runningUserId.userId !== userId && tmpRows.isNotified === 'Y') {
             notification('[프로그라운드]', `짝짝짝! 누군가 ${tmpRows.nickname} 님의 러닝을 응원🎉 했어요!`, tmpRows.fcmToken);
         }
 
