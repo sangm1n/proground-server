@@ -63,7 +63,7 @@ exports.getRunningCount = async function () {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select count(runningId) as runningCount
+        select count(distinct userId) as runningCount
         from Running
         where isDeleted = 'N'
         and str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H') <= endTime
