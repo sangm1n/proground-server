@@ -300,3 +300,18 @@ exports.updateUserMission = async function (userId, missionId, createdAt) {
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
+
+exports.insertChallengeLeader = async function (userId, challengeId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        insert into UserChallenge (userId, challengeId) values (?, ?);
+        `;
+        const params = [userId, challengeId];
+        const [rows] = await connection.query(query, params);
+        connection.release();
+    } catch (err) {
+        logger.error(`App - insertChallengeLeader DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}

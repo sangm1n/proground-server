@@ -80,6 +80,8 @@ exports.createChallenge = async function (req, res) {
                 }
                 logger.info(`${challengeName} - 해당 카드 부여 완료`)
             }
+            await adminDao.insertChallengeLeader(userId, challengeId);
+            logger.info(`${challengeId}번 챌린지 리더 배치 완료`);
         // 경쟁전
         } else {
             await adminDao.insertChallenge(challengeName, introduction, image, challengeType, distance, personnel, minLevel, maxLevel, startDate, endDate, firstColor, firstTeamName, secondColor, secondTeamName);
@@ -92,6 +94,8 @@ exports.createChallenge = async function (req, res) {
                 }
                 logger.info(`${challengeName} - 해당 카드 부여 완료`)
             }
+            await adminDao.insertChallengeLeader(userId, challengeId);
+            logger.info(`${challengeName} - 리더 배치 완료`);
         }
         return res.json(response.successTrue(1000, "챌린지 생성에 성공하였습니다."));
     } catch (err) {
