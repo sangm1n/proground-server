@@ -39,7 +39,7 @@ exports.allChallenges = async function (req, res) {
 
 /***
  * update : 2021-01-30
- * My 챌린지 조회 API -> 안읽은 채팅 개수 가져오는거 추가해야함 (완료 !)
+ * My 챌린지 조회 API
  */
 exports.myChallenge = async function (req, res) {
     const userId = req.verifiedToken.userId;
@@ -53,7 +53,11 @@ exports.myChallenge = async function (req, res) {
 
     try {
         page = size * (page - 1);
-        let challengeRows = await challengeDao.getMyChallenge(userId, page, size);
+        let challengeRows;
+
+        const userType = await userDao.checkLeader(userId);
+        if (userType === 'L') challengeRows = await challengeDao.getLeaderMyChallenge(userId, page, size);
+        else challengeRows = await challengeDao.getMyChallenge(userId, page, size);
 
         if (challengeRows.length === 0) return res.json(response.successTrue(1033, "참여중인 챌린지가 없습니다."));
 

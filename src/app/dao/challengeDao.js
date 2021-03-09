@@ -116,6 +116,58 @@ exports.getMyChallenge = async function (userId, page, size) {
     }
 }
 
+exports.getLeaderMyChallenge = async function (userId, page, size) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select c.challengeId,
+            image,
+            minLevel,
+            maxLevel,
+            if(challengeType = 'A', '목표달성', '경쟁전')                                              as challengeType,
+            if(challengeType = 'A', concat(challengeName, ' with ', w.nickname), challengeName) as challengeName,
+            distance,
+            ifnull(v.userCount, 0)                                                              as userCount,
+            personnel,
+            date_format(startDate, '%y.%m.%d')                                                  as startDate,
+            date_format(endDate, '%y.%m.%d')                                                    as endDate,
+            cast(round((timestampdiff(day, startDate, now()) + 1) /
+                        (timestampdiff(day, startDate, endDate) + 1) * 100) as unsigned)         as ratio
+        from Challenge c
+                join UserChallenge uc on c.challengeId = uc.challengeId
+                join (select u.userId, nickname, uc.challengeId
+                    from User u
+                                join UserChallenge uc on u.userId = uc.userId
+                    where u.isDeleted = 'N') w
+                    on c.challengeId = w.challengeId
+                left join (select count(userId) as userCount, uc.challengeId
+                            from UserChallenge uc
+                                    join Challenge c on uc.challengeId = c.challengeId
+                            where uc.isDeleted = 'N'
+                            and c.isDeleted = 'N'
+                            and uc.challengeColor is not null
+                            group by uc.challengeId) v
+                        on c.challengeId = v.challengeId
+        where c.isDeleted = 'N'
+        and uc.isDeleted = 'N'
+        and uc.challengeColor is null
+        and uc.userId = ?
+        group by challengeId
+        limit ` + page + `, ` + size + `;
+        `;
+        const params = [userId, page, size];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+
+        return rows;
+    } catch (err) {
+        logger.error(`App - getLeaderMyChallenge DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
 // 개별 챌린지 조회
 exports.challengeEndDate = async function (challengeId) {
     try {
