@@ -15,14 +15,17 @@ const s3 = require('../../utils/awsS3');
  */
 exports.createLeader = async function (req, res) {
     const userId = req.verifiedToken.userId;
-    const nickname = req.body.nickname;
+    const uuserId = req.body.userId;
 
-    if (!nickname) return res.json(response.successFalse(2000, "닉네임을 입력해주세요."));
+    if (!uuserId) return res.json(response.successFalse(2000, "userId를 입력해주세요."));
     if (!req.file) return res.json(response.successFalse(2010, "프로필 이미지를 입력해주세요."));
     
     try {
         const checkRows = await adminDao.checkAdmin(userId);
         if (checkRows === 0) return res.json(response.successFalse(3000, "관리자가 아닙니다."));
+
+        const userCheckRows = await userDao.checkUserId(uuserId);
+        if (userCheckRows === 0) return res.json(response.successFalse(3010, "존재하지 않는 사용자입니다."));
 
         const profileImage = req.file.location;
         await adminDao.updateUserType(profileImage, nickname);

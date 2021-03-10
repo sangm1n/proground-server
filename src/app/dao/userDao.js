@@ -24,6 +24,25 @@ exports.checkUserEmail = async function (email) {
     }
 }
 
+exports.checkUserId = async function (userId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select exists(select userId from User where userId = ? and isDeleted = 'N') as exist;
+        `;
+        const params = [userId];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+
+        return rows[0]['exist'];
+    } catch (err) {
+        logger.error(`App - checkUserId DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
 exports.checkNonUserId = async function (nonUserId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
