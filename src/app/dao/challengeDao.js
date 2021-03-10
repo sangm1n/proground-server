@@ -165,19 +165,19 @@ exports.getLeaderMyChallenge = async function (userId) {
 }
 
 // 개별 챌린지 조회
-exports.challengeEndDate = async function (challengeId) {
+exports.challengeStartDate = async function (challengeId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         let query = `
-        select endDate from Challenge where challengeId = ? and isDeleted = 'N';
+        select startDate from Challenge where challengeId = ? and isDeleted = 'N';
         `;
         const params = [challengeId];
         const [rows] = await connection.query(query, params);
         connection.release();
 
-        return rows[0]['endDate'];
+        return rows[0]['startDate'];
     } catch (err) {
-        logger.error(`App - challengeEndDate DB Connection error\n: ${err.message}`);
+        logger.error(`App - challengeStartDate DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
@@ -326,7 +326,7 @@ exports.checkRegisterChallenge = async function (userId, challengeId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select exists(select userId from UserChallenge where userId = ? and challengeId = ? and isDeleted = 'N') as exist;
+        select exists(select userId from UserChallenge where userId = ? and challengeId = ? and challengeColor is not null and isDeleted = 'N') as exist;
         `;
         const params = [userId, challengeId];
         const [rows] = await connection.query(
