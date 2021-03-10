@@ -193,25 +193,21 @@ exports.getChallenge = async function (challengeId) {
             challengeName,
             introduction,
             distance,
-            if(challengeType = 'A', '목표달성', '경쟁전') as challengeType,
+            if(challengeType = 'A', '목표달성', '경쟁전')     as challengeType,
             v.userCount,
             personnel,
             minLevel,
             maxLevel,
-            timestampdiff(day, startDate, endDate) + 1                  as period,
-            timestampdiff(day, now(), startDate)   as beforeDate,
-            date_format(startDate, '%Y.%c.%e')     as startDate,
-            date_format(endDate, '%Y.%c.%e')       as endDate
+            timestampdiff(day, startDate, endDate) + 1 as period,
+            timestampdiff(day, now(), startDate)       as beforeDate,
+            date_format(startDate, '%Y.%c.%e')         as startDate,
+            date_format(endDate, '%Y.%c.%e')           as endDate
         from Challenge c
                 left join UserChallenge uc on c.challengeId = uc.challengeId
-                join (select ifnull(count(userId), 0) as userCount, c.challengeId
+                join (select ifnull(count(userId), 0) - 1 as userCount, c.challengeId
                     from UserChallenge uc
                                 right join Challenge c on uc.challengeId = c.challengeId
                     where c.isDeleted = 'N'
-                        and case
-                                when userId is not null then uc.isDeleted = 'N'
-                                    and uc.challengeColor is not null
-                                else 1 end
                     group by c.challengeId) v
                     on c.challengeId = v.challengeId
         where c.isDeleted = 'N'
