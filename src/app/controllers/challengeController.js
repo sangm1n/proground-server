@@ -191,18 +191,14 @@ exports.challengeStatistic = async function (req, res) {
     const userId = req.verifiedToken.userId;
     const {challengeId} = req.params;
     let {
-        type, status, page, size
+        type, status
     } = req.query;
 
-    if (!page) return res.json(response.successFalse(2060, "페이지를 입력해주세요."));
-    if (!size) return res.json(response.successFalse(2070, "사이즈를 입력해주세요."));
-    if (page < 1) return res.json(response.successFalse(2061, "페이지 번호를 확인해주세요."));
     if (!challengeId) return res.json(response.successFalse(2100, "챌린지 번호를 입력해주세요."));
     if (status !== 'today' && status !== 'total') return res.json(response.successFalse(2080, "오늘은 today, 누적은 total을 입력해주세요."));
     if (type !== 'A' && type !== 'B') return res.json(response.successFalse(2081, "목표달성은 A, 경쟁전은 B를 입력해주세요."));
 
     try {
-        page = size * (page - 1);
         const challengeType = await challengeDao.getChallengeType(challengeId);
 
         if (challengeType !== type) return res.json(response.successFalse(3100, "올바른 챌린지 타입이 아닙니다.")); 
@@ -213,28 +209,32 @@ exports.challengeStatistic = async function (req, res) {
         if (status === 'today') {
             let statisticInfoRows;
             if (type === 'B') {
-                statisticInfoRows = await challengeDao.getStatsInfo(userId, challengeId, page, size);
+                statisticInfoRows = await challengeDao.getStatsInfo(userId, challengeId);
                 if (statisticInfoRows.length === 0) return res.json(response.successTrue(1050, "아직 챌린지 통계가 없습니다."));
 
+                logger.info(`Today/경쟁전 ${challengeId}번 챌린지 통계 조회 완료`);
                 return res.json(response.successTrue(1200, "'오늘' 경쟁전 챌린지 통계 조회에 성공하였습니다.", statisticInfoRows));
             } else {
-                statisticInfoRows = await challengeDao.getGoalStatsInfo(userId, challengeId, page, size);
+                statisticInfoRows = await challengeDao.getGoalStatsInfo(userId, challengeId);
                 if (statisticInfoRows.length === 0) return res.json(response.successTrue(1050, "아직 챌린지 통계가 없습니다."));
 
+                logger.info(`Today/목표달성 ${challengeId}번 챌린지 통계 조회 완료`);
                 return res.json(response.successTrue(1201, "'오늘' 목표달성 챌린지 통계 조회에 성공하였습니다.", statisticInfoRows));
             }
         // 누적
         } else {
             let statisticInfoRows;
             if (type === 'B') {
-                statisticInfoRows = await challengeDao.getStatsTotalInfo(userId, challengeId, page, size);
+                statisticInfoRows = await challengeDao.getStatsTotalInfo(userId, challengeId);
                 if (statisticInfoRows.length === 0) return res.json(response.successTrue(1050, "아직 챌린지 통계가 없습니다."));
 
+                logger.info(`Total/경쟁전 ${challengeId}번 챌린지 통계 조회 완료`);
                 return res.json(response.successTrue(1202, "'누적' 경쟁전 챌린지 통계 조회에 성공하였습니다.", statisticInfoRows));
             } else {
-                statisticInfoRows = await challengeDao.getGoalStatsTotalInfo(userId, challengeId, page, size);
+                statisticInfoRows = await challengeDao.getGoalStatsTotalInfo(userId, challengeId);
                 if (statisticInfoRows.length === 0) return res.json(response.successTrue(1050, "아직 챌린지 통계가 없습니다."));
 
+                logger.info(`Total/목표달성 ${challengeId}번 챌린지 통계 조회 완료`);
                 return res.json(response.successTrue(1203, "'누적' 목표달성 챌린지 통계 조회에 성공하였습니다.", statisticInfoRows));
             }
         }
@@ -276,6 +276,7 @@ exports.challengeGraph = async function (req, res) {
                     firstTeam: graphRows[0],
                     secondTeam: graphRows[1]
                 }
+                logger.info(`Today/경쟁전 ${challengeId}번 챌린지 그래프 조회 완료`);
                 return res.json(response.successTrue(1200, "'오늘' 경쟁전 챌린지 그래프 조회에 성공하였습니다.", result));
             } else {
                 graphRows = await challengeDao.getGoalGraphToday(userId, challengeId);
@@ -284,6 +285,7 @@ exports.challengeGraph = async function (req, res) {
                     user: graphRows[0],
                     team: graphRows[1]
                 }
+                logger.info(`Today/목표달성 ${challengeId}번 챌린지 그래프 조회 완료`);
                 return res.json(response.successTrue(1201, "'오늘' 목표달성 챌린지 그래프 조회에 성공하였습니다.", result));
             }
         // 누적
@@ -296,6 +298,7 @@ exports.challengeGraph = async function (req, res) {
                     firstTeam: graphRows[0],
                     secondTeam: graphRows[1]
                 }
+                logger.info(`Total/경쟁전 ${challengeId}번 챌린지 그래프 조회 완료`);
                 return res.json(response.successTrue(1202, "'누적' 경쟁전 챌린지 그래프 조회에 성공하였습니다.", result));
             } else {
                 graphRows = await challengeDao.getGoalGraphTotal(userId, challengeId);
@@ -304,6 +307,7 @@ exports.challengeGraph = async function (req, res) {
                     user: graphRows[0],
                     challenge: graphRows[1]
                 }
+                logger.info(`Total/목표달성 ${challengeId}번 챌린지 그래프 조회 완료`);
                 return res.json(response.successTrue(1203, "'누적' 목표달성 챌린지 그래프 조회에 성공하였습니다.", result));
             }
         }

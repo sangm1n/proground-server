@@ -71,15 +71,15 @@ exports.getMyChallenge = async function (userId) {
             image,
             minLevel,
             maxLevel,
-            if(challengeType = 'A', '목표달성', '경쟁전')      as challengeType,
-            if(challengeType = 'A', concat(challengeName, ' with ', w.nickname) ,challengeName) as challengeName,
+            if(challengeType = 'A', '목표달성', '경쟁전')                                              as challengeType,
+            if(challengeType = 'A', concat(challengeName, ' with ', w.nickname), challengeName) as challengeName,
             distance,
             v.userCount,
             personnel,
-            date_format(startDate, '%y.%m.%d')          as startDate,
-            date_format(endDate, '%y.%m.%d')            as endDate,
-            cast(round((timestampdiff(day, startDate, now()) + 1) /
-                (timestampdiff(day, startDate, endDate) + 1) * 100) as unsigned) as ratio
+            date_format(startDate, '%y.%m.%d')                                                  as startDate,
+            date_format(endDate, '%y.%m.%d')                                                    as endDate,
+            cast(round(if(timestampdiff(day, startDate, now()) < 0, 0, timestampdiff(day, startDate, now())) /
+                        (timestampdiff(day, startDate, endDate) + 1) * 100) as unsigned)         as ratio
         from Challenge c
                 join UserChallenge uc on c.challengeId = uc.challengeId
                 join (select u.userId, nickname, uc.challengeId
@@ -448,7 +448,7 @@ exports.getChallengeTeam = async function (userId, challengeId) {
     }
 }
 
-exports.getStatsInfo = async function (userId, challengeId, page, size) {
+exports.getStatsInfo = async function (userId, challengeId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
@@ -482,10 +482,9 @@ exports.getStatsInfo = async function (userId, challengeId, page, size) {
         and str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H') <= endTime
         and endTime <= str_to_date(date_format(date_add(now(), interval +1 day), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H')
         group by userId
-        order by distance desc
-        limit ` + page + `, ` + size + `;
+        order by distance desc;
         `;
-        const params = [userId, challengeId, challengeId, page, size];
+        const params = [userId, challengeId, challengeId];
         const [rows] = await connection.query(
             query, params
         );
@@ -498,7 +497,7 @@ exports.getStatsInfo = async function (userId, challengeId, page, size) {
     }
 }
 
-exports.getGoalStatsInfo = async function (userId, challengeId, page, size) {
+exports.getGoalStatsInfo = async function (userId, challengeId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
@@ -531,11 +530,10 @@ exports.getGoalStatsInfo = async function (userId, challengeId, page, size) {
         and str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H') <= endTime
         and endTime <= str_to_date(date_format(date_add(now(), interval +1 day), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H')
         group by userId
-        order by distance desc
-        limit ` + page + `, ` + size + `;
+        order by distance desc;
         `;
 
-        const params = [userId, challengeId, challengeId, page, size];
+        const params = [userId, challengeId, challengeId];
         const [rows] = await connection.query(
             query, params
         );
@@ -548,7 +546,7 @@ exports.getGoalStatsInfo = async function (userId, challengeId, page, size) {
     }
 }
 
-exports.getStatsTotalInfo = async function (userId, challengeId, page, size) {
+exports.getStatsTotalInfo = async function (userId, challengeId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
@@ -580,10 +578,9 @@ exports.getStatsTotalInfo = async function (userId, challengeId, page, size) {
         and v.isDeleted = 'N'
         and r.isDeleted = 'N'
         group by userId
-        order by distance desc
-        limit ` + page + `, ` + size + `;
+        order by distance desc;
         `;
-        const params = [userId, challengeId, challengeId, page, size];
+        const params = [userId, challengeId, challengeId];
         const [rows] = await connection.query(
             query, params
         );
@@ -596,7 +593,7 @@ exports.getStatsTotalInfo = async function (userId, challengeId, page, size) {
     }
 }
 
-exports.getGoalStatsTotalInfo = async function (userId, challengeId, page, size) {
+exports.getGoalStatsTotalInfo = async function (userId, challengeId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
@@ -627,10 +624,9 @@ exports.getGoalStatsTotalInfo = async function (userId, challengeId, page, size)
         and v.isDeleted = 'N'
         and r.isDeleted = 'N'
         group by userId
-        order by distance desc
-        limit ` + page + `, ` + size + `;
+        order by distance desc;
         `;
-        const params = [userId, challengeId, challengeId, page, size];
+        const params = [userId, challengeId, challengeId];
         const [rows] = await connection.query(
             query, params
         );
