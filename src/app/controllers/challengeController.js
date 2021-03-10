@@ -34,21 +34,13 @@ exports.allChallenges = async function (req, res) {
  */
 exports.myChallenge = async function (req, res) {
     const userId = req.verifiedToken.userId;
-    let {
-        page, size
-    } = req.query;
-
-    if (!page) return res.json(response.successFalse(2060, "페이지를 입력해주세요."));
-    if (!size) return res.json(response.successFalse(2070, "사이즈를 입력해주세요."));
-    if (page < 1) return res.json(response.successFalse(2061, "페이지 번호를 확인해주세요."));
 
     try {
-        page = size * (page - 1);
         let challengeRows;
 
         const userType = await userDao.checkLeader(userId);
-        if (userType === 'L') challengeRows = await challengeDao.getLeaderMyChallenge(userId, page, size);
-        else challengeRows = await challengeDao.getMyChallenge(userId, page, size);
+        if (userType === 'L') challengeRows = await challengeDao.getLeaderMyChallenge(userId);
+        else challengeRows = await challengeDao.getMyChallenge(userId);
 
         if (challengeRows.length === 0) return res.json(response.successTrue(1033, "참여중인 챌린지가 없습니다."));
 

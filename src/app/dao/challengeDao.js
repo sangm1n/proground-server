@@ -63,7 +63,7 @@ exports.getAllChallenges = async function () {
     }
 }
 
-exports.getMyChallenge = async function (userId, page, size) {
+exports.getMyChallenge = async function (userId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
@@ -98,10 +98,9 @@ exports.getMyChallenge = async function (userId, page, size) {
         where c.isDeleted = 'N'
         and uc.isDeleted = 'N'
         and uc.userId = ?
-        group by challengeId
-        limit ` + page + `, ` + size + `;
+        group by challengeId;
         `;
-        const params = [userId, page, size];
+        const params = [userId];
         const [rows] = await connection.query(
             query, params
         );
@@ -114,7 +113,7 @@ exports.getMyChallenge = async function (userId, page, size) {
     }
 }
 
-exports.getLeaderMyChallenge = async function (userId, page, size) {
+exports.getLeaderMyChallenge = async function (userId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
@@ -150,10 +149,9 @@ exports.getLeaderMyChallenge = async function (userId, page, size) {
         and uc.isDeleted = 'N'
         and uc.challengeColor is null
         and uc.userId = ?
-        group by challengeId
-        limit ` + page + `, ` + size + `;
+        group by challengeId;
         `;
-        const params = [userId, page, size];
+        const params = [userId];
         const [rows] = await connection.query(
             query, params
         );
