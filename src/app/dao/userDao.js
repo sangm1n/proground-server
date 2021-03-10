@@ -471,13 +471,13 @@ exports.getAllUserChallenge = async function (challengeId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select distinct u.userId, nickname, fcmToken
+        select distinct u.userId, nickname, fcmToken, isNotified,
         from User u
                 join UserChallenge uc on u.userId = uc.userId
         where u.isDeleted = 'N'
         and uc.isDeleted = 'N'
         and uc.challengeId = ?
-        and u.userType = 'G' and isNotified = 'Y';
+        and u.userType = 'G';
         `;
         const params = [challengeId];
         const [rows] = await connection.query(query, params);
@@ -494,12 +494,12 @@ exports.getAllUserLevel = async function (level) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select distinct u.userId, nickname, fcmToken
+        select distinct u.userId, nickname, fcmToken, isNotified
         from User u
                 join UserLevel ul on u.userId = ul.userId
         where u.isDeleted = 'N'
         and ul.level = ?
-        and u.userType = 'G' and isNotified = 'Y';
+        and u.userType = 'G';
         `;
         const params = [level];
         const [rows] = await connection.query(query, params);
@@ -516,7 +516,7 @@ exports.getUserFcmToken = async function (userId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select userId, nickname, fcmToken from User where userId = ? and isDeleted = 'N' and userType = 'G' and isNotified = 'Y';
+        select userId, nickname, fcmToken, isNotified from User where userId = ? and isDeleted = 'N' and userType = 'G';
         `;
         const params = [userId];
         const [rows] = await connection.query(query, params);

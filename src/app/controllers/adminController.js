@@ -254,17 +254,17 @@ exports.spreadChallenge = async function (req, res) {
             for (var i = 0; i < challengeRows.length; i++) {
                 await adminDao.postUserMission(challengeRows[i].userId, typeId);
 
-                if (challengeRows[i].fcmToken !== null) {
+                if (challengeRows[i].fcmToken !== null && challengeRows[i].isNotified === 'Y') {
                     notification('[프로그라운드]', '짜잔! 새로운 미션이 도착했어요!', challengeRows[i].fcmToken);
                 }
             }
 
             return res.json(response.successTrue(1000, "챌린지별 미션 부여에 성공하였습니다."));
-        } else {
+        } else if (type === "card") {
             for (var i = 0; i < challengeRows.length; i++) {
                 await adminDao.postUserCard(challengeRows[i].userId, typeId);
 
-                if (challengeRows[i].fcmToken !== null) {
+                if (challengeRows[i].fcmToken !== null && challengeRows[i].isNotified === 'Y') {
                     notification('[프로그라운드]', '우와! 새로운 카드✨ 가 도착했어요!', challengeRows[i].fcmToken);
                 }
             }
@@ -304,17 +304,17 @@ exports.spreadLevel = async function (req, res) {
             for (var i = 0; i < levelRows.length; i++) {
                 await adminDao.postUserMission(levelRows[i].userId, typeId);
 
-                if (levelRows[i].fcmToken !== null) {
+                if (levelRows[i].fcmToken !== null && levelRows[i].isNotified === 'Y') {
                     notification('[프로그라운드]', '짜잔! 새로운 미션이 도착했어요!', levelRows[i].fcmToken);
                 }
             }
 
             return res.json(response.successTrue(1000, "레벨별 미션 부여에 성공하였습니다."));
-        } else {
+        } else if (type === "card") {
             for (var i = 0; i < levelRows.length; i++) {
                 await adminDao.postUserCard(levelRows[i].userId, typeId);
 
-                if (levelRows[i].fcmToken !== null) {
+                if (levelRows[i].fcmToken !== null && levelRows[i].isNotified === 'Y') {
                     notification('[프로그라운드]', '우와! 새로운 카드✨ 가 도착했어요!', levelRows[i].fcmToken);
                 }
             }
@@ -351,18 +351,15 @@ exports.spreadUser = async function (req, res) {
         if (profileRows === undefined) return res.json(response.successFalse(3010, "존재하지 않는 사용자입니다."));
 
         const userRows = await userDao.getUserFcmToken(userId);
+        await adminDao.postUserMission(userRows.userId, typeId);
         if (type === "mission") {
-            await adminDao.postUserMission(userRows.userId, typeId);
-
-            if (userRows.fcmToken !== null) {
+            if (userRows.fcmToken !== null && userRows.isNotified === 'Y') {
                 notification('[프로그라운드]', '짜잔! 새로운 미션이 도착했어요!', userRows.fcmToken);
             }
 
             return res.json(response.successTrue(1000, "회원별 미션 부여에 성공하였습니다."));
-        } else {
-            await adminDao.postUserCard(userRows.userId, typeId);
-
-            if (userRows.fcmToken !== null) {
+        } else if (type === "card") {
+            if (userRows.fcmToken !== null && userRows.isNotified === 'Y') {
                 notification('[프로그라운드]', '우와! 새로운 카드✨ 가 도착했어요!', userRows.fcmToken);
             }
 
