@@ -4,13 +4,13 @@ const { pool } = require("../../../config/database");
 /***
  * 리더 권한 부여
  */
-exports.updateUserType = async function (profileImage, nickname) {
+exports.updateUserType = async function (profileImage, userId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        update User set userType = 'L', profileImage = ? where nickname = ?;
+        update User set userType = 'L', profileImage = ? where userId = ?;
         `;
-        const params = [profileImage, nickname];
+        const params = [profileImage, userId];
         await connection.query(query, params);
         connection.release();
     } catch (err) {

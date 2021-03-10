@@ -28,8 +28,8 @@ exports.createLeader = async function (req, res) {
         if (userCheckRows === 0) return res.json(response.successFalse(3010, "존재하지 않는 사용자입니다."));
 
         const profileImage = req.file.location;
-        await adminDao.updateUserType(profileImage, nickname);
-        logger.info(`${nickname}에게 리더 부여 완료`);
+        await adminDao.updateUserType(profileImage, userId);
+        logger.info(`${userId}번 사용자에게 리더 부여 완료`);
         return res.json(response.successTrue(1000, "특정 사용자에게 리더 권한을 부여하였습니다."));
     } catch (err) {
         logger.error(`App - createLeader Query error\n: ${err.message}`);
