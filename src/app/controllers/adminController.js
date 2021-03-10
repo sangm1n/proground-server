@@ -351,18 +351,19 @@ exports.spreadUser = async function (req, res) {
         if (profileRows === undefined) return res.json(response.successFalse(3010, "존재하지 않는 사용자입니다."));
 
         const userRows = await userDao.getUserFcmToken(userId);
-        await adminDao.postUserMission(userRows.userId, typeId);
         if (type === "mission") {
+            await adminDao.postUserMission(userRows.userId, typeId);
+
             if (userRows.fcmToken !== null && userRows.isNotified === 'Y') {
                 notification('[프로그라운드]', '짜잔! 새로운 미션이 도착했어요!', userRows.fcmToken);
             }
-
             return res.json(response.successTrue(1000, "회원별 미션 부여에 성공하였습니다."));
         } else if (type === "card") {
+            await adminDao.postUserCard(userRows.userId, typeId);
+
             if (userRows.fcmToken !== null && userRows.isNotified === 'Y') {
                 notification('[프로그라운드]', '우와! 새로운 카드✨ 가 도착했어요!', userRows.fcmToken);
             }
-
             return res.json(response.successTrue(1010, "회원별 카드 부여에 성공하였습니다."));
         }
     } catch (err) {
