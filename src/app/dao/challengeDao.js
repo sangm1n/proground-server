@@ -24,7 +24,7 @@ exports.checkChallenge = async function (challengeId) {
     }
 }
 
-exports.getAllChallenges = async function (page, size) {
+exports.getAllChallenges = async function () {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
@@ -49,12 +49,10 @@ exports.getAllChallenges = async function (page, size) {
                             and u.isDeleted = 'N') v
                         on c.challengeId = v.challengeId
         where c.isDeleted = 'N'
-        order by endDate desc
-        limit ` + page + `, ` + size + `;
+        order by endDate desc;
         `;
-        const params = [page, size];
         const [rows] = await connection.query(
-            query, params
+            query
         );
         connection.release();
 
