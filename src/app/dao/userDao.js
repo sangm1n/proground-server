@@ -471,7 +471,7 @@ exports.getAllUserChallenge = async function (challengeId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select distinct u.userId, nickname, fcmToken, isNotified,
+        select distinct u.userId, nickname, fcmToken, isNotified
         from User u
                 join UserChallenge uc on u.userId = uc.userId
         where u.isDeleted = 'N'
