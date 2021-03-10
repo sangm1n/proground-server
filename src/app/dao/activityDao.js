@@ -73,7 +73,9 @@ exports.getTotalRunning = async function (state) {
                                 lpad(round((sum(r.time) / v.totalDay) % 3600) div 60, 2, 0), ':',
                                 lpad(round((sum(r.time) / v.totalDay) % 3600) % 60, 2, 0))
                 end     as avgTime,
-            if(round(sum(r.pace) / v.totalDay, 2) is null, '-''-', concat(left(cast(round(sum(r.pace) / v.totalDay, 2) as char), 1), '''', right(cast(round(sum(r.pace) / v.totalDay, 2) as char), 2)))       as avgPace,
+            if(round(sum(r.pace) / v.totalDay, 2) is null, '-''-',
+            concat(substring_index(cast(round(sum(r.pace) / v.totalDay, 2) as char), '.', 1), '''',
+                    substring_index(cast(round(sum(r.pace) / v.totalDay, 2) as char), '.', -1))) as avgPace,
             concat(ifnull(sum(r.calorie), 0), 'kcal')                         as totalCalorie
         from (select distinct startTime, distance, pace, calorie, timestampdiff(second, startTime, endTime) as time
             from Running
@@ -117,7 +119,7 @@ exports.getRunningHistory = async function (state) {
                                 lpad(concat(timestampdiff(second, startTime, endTime) -
                                             timestampdiff(minute, startTime, endTime) * 60), 2, 0))
                 end                          as time,
-            concat('페이스 ', left(cast(pace as char), 1), '''', right(cast(pace as char), 2)) as pace,
+            concat('페이스 ', substring_index(cast(pace as char), '.', 1), '''', substring_index(cast(pace as char), '.', -1)) as pace,
             concat('소모 칼로리 ', calorie, 'kcal') as calorie,
             ifnull(v.likeCount, 0)           as likeCount,
             date_format(endTime, '%Y.%m.%d') as endTime
@@ -182,7 +184,7 @@ exports.getChallengeHistory = async function (userId) {
         const query = `
         select c.challengeId,
             image,
-            if(challengeType = 'B', concat(challengeName, ' with ', w.nickname), challengeName) as challengeName,
+            concat(challengeName, ' with ', w.nickname) as challengeName,
             minLevel,
             maxLevel,
             c.distance,

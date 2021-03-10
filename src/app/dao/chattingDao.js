@@ -9,25 +9,27 @@ exports.getChatting = async function (userId, challengeId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         let query = `
-        select distinct c.chattingId, uc.challengeTeamName,
-            ifnull(v.countChatting, 0) as more,
-            u.userId,
-            u.nickname,
-            u.profileImage,
-            l.levelColor,
-            c.message,
-            c.image,
-            date_format(c.createdAt, '%H:%i') as createdAt,
-            w.chattingId               as commentId,
-            w.userId                   as commentUserId,
-            w.nickname                 as commentUserNickname,
-            w.profileImage                commentUserProfile,
-            w.levelColor               as commentLevelColor,
-            w.message                  as commentMessage,
-            w.image                    as commentImage,
-            date_format(w.createdAt, '%H:%i') as commentCreatedAt,
-            c.createdAt as compareTime,
-            'A' as status
+        select distinct c.chattingId,
+                        uc.challengeTeamName,
+                        ifnull(v.countChatting, 0)        as more,
+                        u.userId,
+                        u.nickname,
+                        u.profileImage,
+                        l.levelColor,
+                        c.message,
+                        c.image,
+                        date_format(c.createdAt, '%H:%i') as createdAt,
+                        w.chattingId                      as commentId,
+                        w.userId                          as commentUserId,
+                        w.nickname                        as commentUserNickname,
+                        w.profileImage                       commentUserProfile,
+                        w.challengeTeamName               as commentChallengeTeamName,
+                        w.levelColor                      as commentLevelColor,
+                        w.message                         as commentMessage,
+                        w.image                           as commentImage,
+                        date_format(w.createdAt, '%H:%i') as commentCreatedAt,
+                        c.createdAt                       as compareTime,
+                        'A'                               as status
         from User u
                 join UserLevel ul on u.userId = ul.userId
                 join Level l on ul.level = l.level
@@ -42,6 +44,7 @@ exports.getChatting = async function (userId, challengeId) {
                                 parentChattingId,
                                 c.userId,
                                 profileImage,
+                                challengeTeamName,
                                 nickname,
                                 levelColor,
                                 message,
@@ -51,7 +54,8 @@ exports.getChatting = async function (userId, challengeId) {
                                     join UserLevel ul on u.userId = ul.userId
                                     join Level l on ul.level = l.level
                                     join Chatting c on u.userId = c.userId
-                            where challengeId = ?
+                                    join UserChallenge uc on u.userId = uc.userId
+                            where uc.challengeId = ?
                             and u.isDeleted = 'N'
                             and c.isDeleted = 'N'
                             and c.chattingId != c.parentChattingId
@@ -69,24 +73,25 @@ exports.getChatting = async function (userId, challengeId) {
 
         query = `
         select distinct c.chattingId,
-            ifnull(v.countChatting, 0) as more,
-            u.userId,
-            u.nickname,
-            u.profileImage,
-            l.levelColor,
-            c.message,
-            c.image,
-            date_format(c.createdAt, '%H:%i') as createdAt,
-            w.chattingId               as commentId,
-            w.userId                   as commentUserId,
-            w.nickname                 as commentUserNickname,
-            w.profileImage                commentUserProfile,
-            w.levelColor               as commentLevelColor,
-            w.message                  as commentMessage,
-            w.image                    as commentImage,
-            date_format(w.createdAt, '%H:%i') as commentCreatedAt,
-            c.createdAt as compareTime,
-            'B' as status
+                        ifnull(v.countChatting, 0)        as more,
+                        u.userId,
+                        u.nickname,
+                        u.profileImage,
+                        l.levelColor,
+                        c.message,
+                        c.image,
+                        date_format(c.createdAt, '%H:%i') as createdAt,
+                        w.chattingId                      as commentId,
+                        w.userId                          as commentUserId,
+                        w.nickname                        as commentUserNickname,
+                        w.profileImage                       commentUserProfile,
+                        w.challengeTeamName               as commentChallengeTeamName,
+                        w.levelColor                      as commentLevelColor,
+                        w.message                         as commentMessage,
+                        w.image                           as commentImage,
+                        date_format(w.createdAt, '%H:%i') as commentCreatedAt,
+                        c.createdAt                       as compareTime,
+                        'B'                               as status
         from User u
                 join UserLevel ul on u.userId = ul.userId
                 join Level l on ul.level = l.level
@@ -100,6 +105,7 @@ exports.getChatting = async function (userId, challengeId) {
                                 parentChattingId,
                                 c.userId,
                                 profileImage,
+                                challengeTeamName,
                                 nickname,
                                 levelColor,
                                 message,
@@ -109,7 +115,8 @@ exports.getChatting = async function (userId, challengeId) {
                                     join UserLevel ul on u.userId = ul.userId
                                     join Level l on ul.level = l.level
                                     join Chatting c on u.userId = c.userId
-                            where challengeId = ?
+                                    join UserChallenge uc on u.userId = uc.userId
+                            where uc.challengeId = ?
                             and u.isDeleted = 'N'
                             and c.isDeleted = 'N'
                             and c.chattingId != c.parentChattingId
