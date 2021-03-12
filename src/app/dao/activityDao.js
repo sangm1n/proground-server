@@ -151,19 +151,24 @@ exports.getCardHistory = async function (userId) {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
         select distinct c.cardId,
-            title,
-            subTitle,
-            cardImage,
-            nickname,
-            profileImage,
-            date_format(uc.createdAt, '%Y.%m.%d') as createdAt
+                        title,
+                        subTitle,
+                        cardImage,
+                        nickname,
+                        v.levelColor,
+                        profileImage,
+                        date_format(uc.createdAt, '%Y.%m.%d') as createdAt
         from Card c
                 join UserCard uc on c.cardId = uc.cardId
                 join User u on u.userId = uc.userId
+                join (select userId, levelColor
+                    from UserLevel ul
+                                join Level l on ul.level = l.level) v on u.userId = v.userId
         where u.userId = ?
         and u.isDeleted = 'N'
         and uc.isDeleted = 'N'
-        and c.isDeleted = 'N' order by uc.createdAt desc;
+        and c.isDeleted = 'N'
+        order by uc.createdAt desc;
         `;
         const params = [userId];
         const [rows] = await connection.query(query, params);

@@ -93,12 +93,13 @@ exports.challengeInfo = async function (req, res) {
             const startDate = await challengeDao.challengeStartDate(challengeId);
             const countMembers = await challengeDao.getChallengeMembers(challengeId);
             const checkLeader = await userDao.checkLeader(userId);
+            const checkOpenLeader = await challengeDao.checkOpenLeader(userId, challengeId);
 
-            if (checkRegRows === 1) {
+            if (checkRegRows === 1 || (checkLeader === 'L' && checkOpenLeader === 1)) {
                 status = 'C';
             } else if (checkLevelRows === 0 || checkMaxRows > maxChallenge 
                 || startDate <= new Date() || countMembers + 1 > challengeRows.personnel 
-                || checkLeader === 'L') {
+                || (checkLeader === 'L' && checkOpenLeader !== 1)) {
                 status = 'B';
             } else {
                 status = 'A';

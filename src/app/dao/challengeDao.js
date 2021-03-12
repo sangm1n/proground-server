@@ -1064,3 +1064,22 @@ exports.challengeStatus = async function (challengeId) {
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
+
+exports.checkOpenLeader = async function (userId, challengeId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select exists (select userId from UserChallenge where userId = ? and challengeId = ? and challengeColor is null) as exist;
+        `;
+        const params = [userId, challengeId];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+
+        return rows[0]['exist'];
+    } catch (err) {
+        logger.error(`App - checkOpenLeader DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}

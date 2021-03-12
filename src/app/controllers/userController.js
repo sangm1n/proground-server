@@ -221,7 +221,8 @@ exports.check = async function (req, res) {
                 notReadNotice: countNotice - countReadNotice,
                 height: profileRows.height,
                 weight: profileRows.weight,
-                gender: profileRows.gender
+                gender: profileRows.gender,
+                userType: profileRows.userType
             }
             logger.info(`읽은 공지사항 ${countReadNotice}개`);
             return res.json(response.successTrue(1050, "회원 자동 로그인에 성공하였습니다.", resultRows));

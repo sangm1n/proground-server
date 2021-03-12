@@ -277,7 +277,7 @@ exports.getUserProfile = async function (userId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select profileImage, userName, nickname, email, cast(height as double) as height, cast(weight as double) as weight, gender, isNotified from User where userId = ?;
+        select profileImage, userName, nickname, email, cast(height as double) as height, cast(weight as double) as weight, gender, userType, isNotified from User where userId = ?;
         `;
         const params = [userId];
         const [rows] = await connection.query(
