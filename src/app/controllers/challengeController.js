@@ -98,7 +98,7 @@ exports.challengeInfo = async function (req, res) {
             if (checkRegRows === 1 || (checkLeader === 'L' && checkOpenLeader === 1)) {
                 status = 'C';
             } else if (checkLevelRows === 0 || checkMaxRows > maxChallenge 
-                || startDate <= new Date() || countMembers + 1 > challengeRows.personnel 
+                || startDate <= new Date() || countMembers >= challengeRows.personnel 
                 || (checkLeader === 'L' && checkOpenLeader !== 1)) {
                 status = 'B';
             } else {

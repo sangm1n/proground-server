@@ -205,7 +205,7 @@ exports.getChallenge = async function (challengeId) {
                 join (select ifnull(count(userId), 0) - 1 as userCount, c.challengeId
                     from UserChallenge uc
                                 right join Challenge c on uc.challengeId = c.challengeId
-                    where c.isDeleted = 'N'
+                    where c.isDeleted = 'N' and uc.isDeleted = 'N'
                     group by c.challengeId) v
                     on c.challengeId = v.challengeId
         where c.isDeleted = 'N'
@@ -227,7 +227,7 @@ exports.getChallengeMembers = async function (challengeId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         let query = `
-        select count(userId) as countUsers from UserChallenge where challengeId = ? and isDeleted = 'N';
+        select count(userId) as countUsers from UserChallenge where challengeId = ? and isDeleted = 'N' and challengeColor is not null;
         `;
         const params = [challengeId];
         const [rows] = await connection.query(query, params);
