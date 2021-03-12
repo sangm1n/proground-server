@@ -52,10 +52,11 @@ exports.runningStatistic = async function (req, res) {
             const countMission = await runningDao.countClearMission(userId);
             const levelLimit = await runningDao.getMaxDistance(currentLevel.level);
 
-            let X;
+            let X, Y;
             if (levelLimit.maxDistance - parseFloat(totalRows[0].totalDistance.slice(0, -2), 2) < 0) X = 0;
             else X = levelLimit.maxDistance - parseFloat(totalRows[0].totalDistance.slice(0, -2), 2);
-            const Y = levelLimit.maxMission - countMission;
+            if (levelLimit.maxMission - countMission < 0) Y = 0;
+            else Y = levelLimit.maxMission - countMission;
 
             const result = {
                 weekly: {
