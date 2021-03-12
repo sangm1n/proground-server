@@ -9,7 +9,7 @@ exports.getUserChallenge = async function (userId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select challengeId from UserChallenge where userId = ? and isDeleted = 'N';
+        select challengeId from UserChallenge where userId = ? and isDeleted = 'N' and winStatus is null;
         `;
         const params = [userId];
         const [rows] = await connection.query(query, params);
