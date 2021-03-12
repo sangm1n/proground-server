@@ -116,13 +116,12 @@ exports.createChallenge = async function (req, res) {
 exports.createMission = async function (req, res) {
     const userId = req.verifiedToken.userId;
     const {
-        nickname, distance, time, endDate
+        nickname, distance, time
     } = req.body;
 
     if (!nickname) return res.json(response.successFalse(2000, "리더 닉네임을 입력해주세요."));
     if (!distance) return res.json(response.successFalse(2010, "미션 목표 거리를 입력해주세요."));
     if (!time) return res.json(response.successFalse(2020, "미션 목표 시간을 입력해주세요."));
-    if (!endDate) return res.json(response.successFalse(2030, "미션 시작 일자를 입력해주세요."));
     
     try {
         const checkRows = await adminDao.checkLeader(userId);
@@ -133,7 +132,7 @@ exports.createMission = async function (req, res) {
         logger.info(`리더 체크 완료`);
 
         const leaderId = await adminDao.getLeaderId(nickname);
-        await adminDao.insertMission(leaderId, distance, time, endDate);
+        await adminDao.insertMission(leaderId, distance, time);
         logger.info(`리더 ${nickname} - 미션 생성 완료`);
 
         return res.json(response.successTrue(1000, "미션 생성에 성공하였습니다."));

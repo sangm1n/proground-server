@@ -143,13 +143,13 @@ exports.getLeaderId = async function (nickname) {
 }
 
 // 미션 생성
-exports.insertMission = async function (leaderId, distance, time, endDate) {
+exports.insertMission = async function (leaderId, distance, time) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        insert into Mission (leaderId, distance, time, endDate) values (?, ?, ?, ?); 
+        insert into Mission (leaderId, distance, time) values (?, ?, ?); 
         `;
-        const params = [leaderId, distance, time, endDate];
+        const params = [leaderId, distance, time];
         await connection.query(query, params);
         connection.release();
     } catch (err) {
@@ -269,12 +269,9 @@ exports.getMissionInfo = async function () {
         select userId,
             missionId,
             createdAt,
-            timestampdiff(day, str_to_date(date_format(createdAt, '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H'),
-                            str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H')) as diff
+            timestampdiff(hour, now(), date_add(createdAt, interval 14 day)) as diff
         from UserMission
-        where isDeleted = 'N'
-        and timestampdiff(day, str_to_date(date_format(createdAt, '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H'),
-                            str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H')) >= 14;
+        where timestampdiff(hour, now(), date_add(createdAt, interval 14 day)) = 0;
         `;
         const [rows] = await connection.query(query);
         connection.release();
@@ -286,13 +283,13 @@ exports.getMissionInfo = async function () {
     }
 }
 
-exports.updateUserMission = async function (userId, missionId, createdAt) {
+exports.updateUserMission = async function (userId, missionId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        update UserMission set isDeleted = 'Y' where userId = ? and missionId = ? and createdAt = ?;
+        update UserMission set isDeleted = 'Y' where userId = ? and missionId = ?;
         `;
-        const params = [userId, missionId, createdAt];
+        const params = [userId, missionId];
         const [rows] = await connection.query(query, params);
         connection.release();
     } catch (err) {

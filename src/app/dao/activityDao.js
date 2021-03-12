@@ -235,15 +235,18 @@ exports.getRecommendedMission = async function (userId) {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
         select distinct m.missionId,
-                        cast(distance as double)                                     as distance,
+                        cast(distance as double)      as distance,
                         time,
                         leaderId,
                         nickname,
                         profileImage,
-                        concat(timestampdiff(day, now(), endDate) + 1, '일 ',
-                            floor(if(timestampdiff(hour, now(), endDate) > 24,
-                                        timestampdiff(hour, now(), endDate) / (timestampdiff(day, now(), endDate) + 1),
-                                        timestampdiff(hour, now(), endDate))), '시간') as endTime
+                        case
+                            when timestampdiff(hour, now(), date_add(um.createdAt, interval 14 day)) >= 24
+                                then concat(timestampdiff(hour, now(), date_add(um.createdAt, interval 14 day)) div 24, '일 ',
+                                            mod(timestampdiff(hour, now(), date_add(um.createdAt, interval 14 day)), 24), '시간')
+                            when timestampdiff(hour, now(), date_add(um.createdAt, interval 14 day)) < 24
+                                then concat(timestampdiff(hour, now(), date_add(um.createdAt, interval 14 day)),
+                                            '시간') end as endTime
         from Mission m
                 join UserMission um on m.missionId = um.missionId
                 join User u on m.leaderId = u.userId

@@ -53,14 +53,15 @@ schedule.scheduleJob('0 0 0 * * *', async function() {
         else await challengeDao.challengeResult(challengeId, 'N');
         logger.info(`${challengeId}번 챌린지 종료 - 승리 여부 저장 완료`);
     }
+});
 
+schedule.scheduleJob('0 0 * * * *', async function() {
     const missionRows = await adminDao.getMissionInfo();
     for (var i = 0; i < missionRows.length; i++) {
         let userId = missionRows[i].userId;
         let missionId = missionRows[i].missionId;
-        let createdAt = missionRows[i].createdAt;
 
-        await adminDao.updateUserMission(userId, missionId, createdAt);
+        await adminDao.updateUserMission(userId, missionId);
         logger.info(`${userId}번 사용자의 ${missionId}번 미션 14일 지남 - 삭제 완료`);
     }
 });

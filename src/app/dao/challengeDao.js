@@ -888,7 +888,7 @@ exports.getGoalGraphTotal = async function (userId, challengeId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         let query = `
-        select r.userId,
+        select u.userId,
             v.nickname,
             cast(ifnull(round((w.distance / c.distance) * 100, 1), 0.00) as double) as ratio,
             cast(ifnull(round(w.distance, 1), 0.00) as double)                      as distance,
@@ -902,7 +902,7 @@ exports.getGoalGraphTotal = async function (userId, challengeId) {
                     where u.isDeleted = 'N'
                         and uc.isDeleted = 'N'
                         and userType = 'G'
-                        and uc.challengeId = ?) v on r.userId = v.userId
+                        and uc.challengeId = ?) v on u.userId = v.userId
                 left join (select r.runningId, count(likeId) as likeCount
                     from RunningLike rl
                                 join Running r on rl.runningId = r.runningId
@@ -919,8 +919,7 @@ exports.getGoalGraphTotal = async function (userId, challengeId) {
         where u.userId = ?
         and r.challengeId = ?
         and r.isDeleted = 'N'
-        and c.isDeleted = 'N'
-        group by r.userId;
+        and c.isDeleted = 'N';
         `;
         let params = [challengeId, challengeId, userId, challengeId, userId, userId, challengeId];
         const [firstRows] = await connection.query(query, params);
