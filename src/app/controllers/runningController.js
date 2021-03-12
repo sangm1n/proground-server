@@ -100,18 +100,46 @@ exports.recordRunning = async function (req, res) {
                     const totalRows = await activityDao.getTotalRunning(state);
                     let currentLevel = await userDao.getUserLevel(userId);
                     currentLevel = currentLevel.level;
-                    let levelRows = await runningDao.getMaxDistance(currentLevel);
-                    const maxDistance = levelRows.maxDistance;
-                    const maxMission = levelRows.maxMission;
                     const countMission = await runningDao.countClearMission(userId);
+                    let newLevel = 0;
 
-                    if (currentLevel < 9 && (maxDistance <= totalRows[0].totalDistance.slice(0, -2) || maxMission < countMission)) {
-                        await runningDao.updateUserLevel(currentLevel+1, userId);
-                        nextLevel = 'Lv. ' + (currentLevel+1)
+                    for (var i = currentLevel + 1; i < 10; i++) {
+                        let levelInfo = await runningDao.getMaxDistance(i);
+                        if (levelInfo.maxDistance <= totalRows[0].totalDistance.slice(0, -2) &&
+                        levelInfo.maxMission <= countMission) {
+                            newLevel = i;
+                        }
+                    }
+
+                    if (newLevel !== 0) {
+                        await runningDao.updateUserLevel(newLevel, userId);
+                        nextLevel = 'Lv. ' + (newLevel);
                         result = {mission, level: nextLevel};
 
-                        logger.info(`레벨 업 !`);
+                        logger.info(`${userId}번 사용자 ${newLevel}로 레벨 업 !`);
                     }
+                }
+            } else {
+                const state = 'userId = ' + userId;
+                const totalRows = await activityDao.getTotalRunning(state);
+                let currentLevel = await userDao.getUserLevel(userId);
+                currentLevel = currentLevel.level;
+                const countMission = await runningDao.countClearMission(userId);
+                let newLevel = 0;
+
+                for (var i = currentLevel + 1; i < 10; i++) {
+                    let levelInfo = await runningDao.getMaxDistance(i);
+                    if (levelInfo.maxDistance <= totalRows[0].totalDistance.slice(0, -2) &&
+                    levelInfo.maxMission <= countMission) {
+                        newLevel = i;
+                    }
+                }
+
+                if (newLevel !== 0) {
+                    await runningDao.updateUserLevel(newLevel, userId);
+                    result = {level: 'Lv. ' + (newLevel)};
+
+                    logger.info(`${userId}번 사용자 ${newLevel}로 레벨 업 !`);
                 }
             }
 
