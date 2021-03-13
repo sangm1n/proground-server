@@ -57,6 +57,7 @@ exports.createChallenge = async function (req, res) {
     if (!personnel) return res.json(response.successFalse(2050, "챌린지 수용 인원를 입력해주세요."));
     if (!minLevel || !maxLevel) return res.json(response.successFalse(2060, "챌린지 레벨 범위를 올바르게 입력해주세요."));
     if (!startDate || !endDate) return res.json(response.successFalse(2070, "챌린지 날짜 범위를 올바르게 입력해주세요."));
+    if (challengeType === 'B' && personnel % 2 !== 0) return res.json(response.successFalse(2110, "경쟁전 수용인원은 반드시 짝수로 입력해주세요."));
 
     // A: 목표달성, B: 경쟁전
     if (!firstColor && !firstTeamName && !secondColor && !secondTeamName) {

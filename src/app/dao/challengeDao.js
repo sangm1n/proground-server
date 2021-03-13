@@ -1087,3 +1087,31 @@ exports.checkOpenLeader = async function (userId, challengeId) {
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
+
+exports.getChallengePersonnel = async function (challengeId, challengeTeamName) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select personnel,
+            (
+                select count(userId) as firstCount
+                from UserChallenge
+                where challengeId = ?
+                    and challengeColor is not null
+                    and challengeTeamName = ?
+                    and isDeleted = 'N') as memberCount
+        from Challenge
+        where challengeId = ?;
+        `;
+        const params = [challengeId, challengeTeamName, challengeId];
+        const [rows] = await connection.query(
+            query, params
+        );
+        connection.release();
+
+        return rows[0];
+    } catch (err) {
+        logger.error(`App - getChallengePersonnel DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
