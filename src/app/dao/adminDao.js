@@ -232,7 +232,7 @@ exports.postUserMission = async function (userId, missionId) {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
         insert into UserMission (userId, missionId) select ?, ? from dual
-        where not exists (select userId, missionId from UserMission where userId = ? and missionId = ?);
+        where not exists (select userId, missionId from UserMission where userId = ? and missionId = ? and isDeleted = 'N');
         `;
         const params = [userId, missionId, userId, missionId];
         await connection.query(query, params);
@@ -251,7 +251,7 @@ exports.postUserCard = async function (userId, cardId) {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
         insert into UserCard (userId, cardId) select ?, ? from dual
-        where not exists (select userId, cardId from UserCard where userId = ? and cardId = ?);
+        where not exists (select userId, cardId from UserCard where userId = ? and cardId = ? and isDeleted = 'N');
         `;
         const params = [userId, cardId, userId, cardId];
         await connection.query(query, params);

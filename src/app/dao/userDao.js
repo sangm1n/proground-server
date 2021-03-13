@@ -280,9 +280,13 @@ exports.getUserProfile = async function (userId) {
         select profileImage, userName, nickname, email, cast(height as double) as height, cast(weight as double) as weight, gender, userType, isNotified from User where userId = ?;
         `;
         const params = [userId];
-        const [rows] = await connection.query(
+        let [rows] = await connection.query(
             query, params
         );
+
+        if (rows[0].gender === 'M') rows[0].gender = '남성';
+        else rows[0].gender = '여성';
+
         connection.release();
 
         return rows[0];
