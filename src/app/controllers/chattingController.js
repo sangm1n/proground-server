@@ -121,7 +121,7 @@ exports.eachChatting = async function (req, res) {
     try {
         const challengeId = await chattingDao.getChallengeId(chattingId);
         const challengeType = await challengeDao.getChallengeType(challengeId);
-        const chattingRows = await chattingDao.getEachChatting(chattingId, challengeType);
+        const chattingRows = await chattingDao.getEachChatting(challengeId, chattingId, challengeType);
         logger.info(`채팅 ${chattingId}번 - 개별 채팅 조회 완료`);
 
         result = {

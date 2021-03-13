@@ -49,7 +49,7 @@ exports.getAllChallenges = async function () {
                             and u.isDeleted = 'N') v
                         on c.challengeId = v.challengeId
         where c.isDeleted = 'N'
-        order by startDate, endDate;
+        order by startDate desc, endDate desc;
         `;
         const [rows] = await connection.query(
             query
@@ -371,7 +371,7 @@ exports.postChallenge = async function (userId, challengeId, challengeColor, cha
         const query = `
         insert into UserChallenge (userId, challengeId, lastReadTime, challengeColor, challengeTeamName)
         select ?, ?, null, ?, ? from dual
-        where not exists (select * from UserChallenge where userId = ? and challengeId = ? and challengeColor = ? and challengeTeamName = ?);
+        where not exists (select * from UserChallenge where userId = ? and challengeId = ? and challengeColor = ? and challengeTeamName = ? and isDeleted = 'N');
         `;
         const params = [userId, challengeId, challengeColor, challengeTeamName, userId, challengeId, challengeColor, challengeTeamName];
         const [rows] = await connection.query(
@@ -890,11 +890,16 @@ exports.getGoalGraphTotal = async function (userId, challengeId) {
         let query = `
         select u.userId,
             v.nickname,
+            z.levelColor,
             cast(ifnull(round((w.distance / c.distance) * 100, 1), 0.00) as double) as ratio,
             cast(ifnull(round(w.distance, 1), 0.00) as double)                      as distance,
-            cast(ifnull(sum(u.likeCount), 0) as double) as likeCount
+            cast(ifnull(sum(u.likeCount), 0) as double)                             as likeCount
         from Running r
                 join User u
+                join (select userId, levelColor
+                    from UserLevel ul
+                                join Level l on ul.level = l.level) z
+                    on u.userId = z.userId
                 join Challenge c on r.challengeId = c.challengeId
                 join (select uc.userId, nickname, uc.isDeleted, challengeTeamName, profileImage
                     from User u
@@ -904,13 +909,13 @@ exports.getGoalGraphTotal = async function (userId, challengeId) {
                         and userType = 'G'
                         and uc.challengeId = ?) v on u.userId = v.userId
                 left join (select r.runningId, count(likeId) as likeCount
-                    from RunningLike rl
-                                join Running r on rl.runningId = r.runningId
-                    where challengeId = ?
-                        and r.userId = ?
-                        and rl.status = 'Y'
-                        and r.isDeleted = 'N') u
-                    on r.runningId = u.runningId
+                            from RunningLike rl
+                                    join Running r on rl.runningId = r.runningId
+                            where challengeId = ?
+                            and r.userId = ?
+                            and rl.status = 'Y'
+                            and r.isDeleted = 'N') u
+                        on r.runningId = u.runningId
                 join (select ifnull(sum(distance), 0) as distance
                     from Running r
                     where challengeId = ?

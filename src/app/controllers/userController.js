@@ -418,12 +418,17 @@ exports.updateProfile = async function (req, res) {
     if (!height) return res.json(response.successFalse(2042, "키를 입력해주세요."));
     if (!weight) return res.json(response.successFalse(2043, "몸무게를 입력해주세요."));
     if (!gender) return res.json(response.successFalse(2044, "성별을 입력해주세요."));
+    if (gender !== '남성' && gender !== '여성') return res.json(response.successFalse(2046, "성별은 '남성' / '여성'으로만 입력해주세요."));
     
     try {
+        let genderStatus;
+        if (gender === '남성') genderStatus = 'M';
+        else genderStatus = 'F';
+
         const userEmailRows = await userDao.getUserEmail(userId);
         if (userEmailRows != email) return res.json(response.successFalse(2045, "이메일은 변경할 수 없습니다."));
 
-        await userDao.patchProfileInfo(name, nickname, email, height, weight, gender, userId);
+        await userDao.patchProfileInfo(name, nickname, email, height, weight, genderStatus, userId);
         const profileRows = await userDao.getUserProfile(userId);
 
         return res.json(response.successTrue(1060, "프로필 정보 수정에 성공하였습니다.", profileRows));

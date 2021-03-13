@@ -299,7 +299,7 @@ exports.getChallengeId = async function (chattingId) {
 }
 
 // 개별 채팅 조회
-exports.getEachChatting = async function (chattingId, challengeType) {
+exports.getEachChatting = async function (challengeId, chattingId, challengeType) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         
@@ -307,28 +307,33 @@ exports.getEachChatting = async function (chattingId, challengeType) {
         if (challengeType === 'A') {
             query = `
             select distinct c.chattingId,
-                u.userId,
-                u.nickname,
-                u.profileImage,
-                l.levelColor,
-                c.message,
-                c.image,
-                case
-                    when c.createdAt < date_format(now(), '%Y-%m-%d 00:00:00')
-                        then date_format(c.createdAt, '%m-%d %H:%i')
-                    when c.createdAt >= date_format(now(), '%Y-%m-%d 00:00:00')
-                        then date_format(c.createdAt, '%H:%i')
-                    end as createdAt
+                            u.userId,
+                            u.nickname,
+                            u.profileImage,
+                            v.levelColor,
+                            w.challengeTeamName,
+                            w.challengeColor,
+                            c.message,
+                            c.image,
+                            case
+                                when c.createdAt < date_format(now(), '%Y-%m-%d 00:00:00')
+                                    then date_format(c.createdAt, '%m-%d %H:%i')
+                                when c.createdAt >= date_format(now(), '%Y-%m-%d 00:00:00')
+                                    then date_format(c.createdAt, '%H:%i')
+                                end as createdAt
             from User u
-                    join UserLevel ul on u.userId = ul.userId
-                    join Level l on ul.level = l.level
-                    join Chatting c on u.userId = c.userId
-                    join (select c.userId, c.challengeId, chattingId, challengeTeamName, challengeColor
+                    join (select userId, levelColor
+                        from UserLevel ul
+                                    join Level l on ul.level = l.level) v on u.userId = v.userId
+                    join Chatting c on c.userId = u.userId
+                    join (select u.userId, challengeTeamName, challengeColor
                         from UserChallenge uc
-                                    join Chatting c on uc.challengeId = c.challengeId
-                        where challengeColor is not null
-                        group by c.chattingId) v on c.chattingId = v.chattingId
-            where parentChattingId = ? and c.chattingId = parentChattingId
+                                    join User u on uc.userId = u.userId
+                        where challengeId = ?
+                            and u.isDeleted = 'N'
+                            and uc.isDeleted = 'N') w on w.userId = u.userId
+            where parentChattingId = ?
+            and chattingId = parentChattingId
             and u.isDeleted = 'N'
             and c.isDeleted = 'N'
             order by c.createdAt;
@@ -336,63 +341,71 @@ exports.getEachChatting = async function (chattingId, challengeType) {
         } else {
             query = `
             select distinct c.chattingId,
-                u.userId,
-                u.nickname,
-                u.profileImage,
-                l.levelColor,
-                v.challengeTeamName,
-                v.challengeColor,
-                c.message,
-                c.image,
-                case
-                    when c.createdAt < date_format(now(), '%Y-%m-%d 00:00:00')
-                        then date_format(c.createdAt, '%m-%d %H:%i')
-                    when c.createdAt >= date_format(now(), '%Y-%m-%d 00:00:00')
-                        then date_format(c.createdAt, '%H:%i')
-                    end as createdAt
+                            u.userId,
+                            u.nickname,
+                            u.profileImage,
+                            v.levelColor,
+                            w.challengeTeamName,
+                            w.challengeColor,
+                            c.message,
+                            c.image,
+                            case
+                                when c.createdAt < date_format(now(), '%Y-%m-%d 00:00:00')
+                                    then date_format(c.createdAt, '%m-%d %H:%i')
+                                when c.createdAt >= date_format(now(), '%Y-%m-%d 00:00:00')
+                                    then date_format(c.createdAt, '%H:%i')
+                                end as createdAt
             from User u
-                    join UserLevel ul on u.userId = ul.userId
-                    join Level l on ul.level = l.level
-                    join Chatting c on u.userId = c.userId
-                    join (select c.userId, c.challengeId, chattingId, challengeTeamName, challengeColor
+                    join (select userId, levelColor
+                        from UserLevel ul
+                                    join Level l on ul.level = l.level) v on u.userId = v.userId
+                    join Chatting c on c.userId = u.userId
+                    join (select u.userId, challengeTeamName, challengeColor
                         from UserChallenge uc
-                                    join Chatting c on uc.challengeId = c.challengeId
-                        where challengeColor is not null
-                        group by c.chattingId) v on c.chattingId = v.chattingId
-            where parentChattingId = ? and c.chattingId = parentChattingId
+                                    join User u on uc.userId = u.userId
+                        where challengeId = ?
+                            and u.isDeleted = 'N'
+                            and uc.isDeleted = 'N') w on w.userId = u.userId
+            where parentChattingId = ?
+            and chattingId = parentChattingId
             and u.isDeleted = 'N'
             and c.isDeleted = 'N'
             order by c.createdAt;
             `;
         }
-        params = [chattingId];
+        params = [challengeId, chattingId];
         const [parentChattingRows] = await connection.query(query, params);
 
         if (challengeType === 'A') {
             query = `
             select distinct c.chattingId,
-                u.userId,
-                u.nickname,
-                u.profileImage,
-                l.levelColor,
-                c.message,
-                c.image,
-                case
-                    when c.createdAt < date_format(now(), '%Y-%m-%d 00:00:00')
-                        then date_format(c.createdAt, '%m-%d %H:%i')
-                    when c.createdAt >= date_format(now(), '%Y-%m-%d 00:00:00')
-                        then date_format(c.createdAt, '%H:%i')
-                    end as createdAt
+                            u.userId,
+                            u.nickname,
+                            u.profileImage,
+                            v.levelColor,
+                            w.challengeTeamName,
+                            w.challengeColor,
+                            c.message,
+                            c.image,
+                            case
+                                when c.createdAt < date_format(now(), '%Y-%m-%d 00:00:00')
+                                    then date_format(c.createdAt, '%m-%d %H:%i')
+                                when c.createdAt >= date_format(now(), '%Y-%m-%d 00:00:00')
+                                    then date_format(c.createdAt, '%H:%i')
+                                end as createdAt
             from User u
-                    join UserLevel ul on u.userId = ul.userId
-                    join Level l on ul.level = l.level
-                    join Chatting c on u.userId = c.userId
-                    join (select c.userId, c.challengeId, chattingId, challengeTeamName, challengeColor
+                    join (select userId, levelColor
+                        from UserLevel ul
+                                    join Level l on ul.level = l.level) v on u.userId = v.userId
+                    join Chatting c on c.userId = u.userId
+                    join (select u.userId, challengeTeamName, challengeColor
                         from UserChallenge uc
-                                    join Chatting c on uc.challengeId = c.challengeId
-                        where challengeColor is not null
-                        group by c.chattingId) v on c.chattingId = v.chattingId
-            where parentChattingId = ? and c.chattingId != parentChattingId
+                                    join User u on uc.userId = u.userId
+                        where challengeId = ?
+                            and u.isDeleted = 'N'
+                            and uc.isDeleted = 'N') w on w.userId = u.userId
+            where parentChattingId = ?
+            and chattingId != parentChattingId
             and u.isDeleted = 'N'
             and c.isDeleted = 'N'
             order by c.createdAt;
@@ -400,36 +413,39 @@ exports.getEachChatting = async function (chattingId, challengeType) {
         } else {
             query = `
             select distinct c.chattingId,
-                u.userId,
-                u.nickname,
-                u.profileImage,
-                l.levelColor,
-                v.challengeTeamName,
-                v.challengeColor,
-                c.message,
-                c.image,
-                case
-                    when c.createdAt < date_format(now(), '%Y-%m-%d 00:00:00')
-                        then date_format(c.createdAt, '%m-%d %H:%i')
-                    when c.createdAt >= date_format(now(), '%Y-%m-%d 00:00:00')
-                        then date_format(c.createdAt, '%H:%i')
-                    end as createdAt
+                            u.userId,
+                            u.nickname,
+                            u.profileImage,
+                            v.levelColor,
+                            w.challengeTeamName,
+                            w.challengeColor,
+                            c.message,
+                            c.image,
+                            case
+                                when c.createdAt < date_format(now(), '%Y-%m-%d 00:00:00')
+                                    then date_format(c.createdAt, '%m-%d %H:%i')
+                                when c.createdAt >= date_format(now(), '%Y-%m-%d 00:00:00')
+                                    then date_format(c.createdAt, '%H:%i')
+                                end as createdAt
             from User u
-                    join UserLevel ul on u.userId = ul.userId
-                    join Level l on ul.level = l.level
-                    join Chatting c on u.userId = c.userId
-                    join (select c.userId, c.challengeId, chattingId, challengeTeamName, challengeColor
+                    join (select userId, levelColor
+                        from UserLevel ul
+                                    join Level l on ul.level = l.level) v on u.userId = v.userId
+                    join Chatting c on c.userId = u.userId
+                    join (select u.userId, challengeTeamName, challengeColor
                         from UserChallenge uc
-                                    join Chatting c on uc.challengeId = c.challengeId
-                        where challengeColor is not null
-                        group by c.chattingId) v on c.chattingId = v.chattingId
-            where parentChattingId = ? and c.chattingId != parentChattingId
+                                    join User u on uc.userId = u.userId
+                        where challengeId = ?
+                            and u.isDeleted = 'N'
+                            and uc.isDeleted = 'N') w on w.userId = u.userId
+            where parentChattingId = ?
+            and chattingId != parentChattingId
             and u.isDeleted = 'N'
             and c.isDeleted = 'N'
             order by c.createdAt;
             `;
         }
-        params = [chattingId];
+        params = [challengeId, chattingId];
         const [childChattingRows] = await connection.query(query, params);
 
         connection.release();
