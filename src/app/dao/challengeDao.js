@@ -49,7 +49,7 @@ exports.getAllChallenges = async function () {
                             and u.isDeleted = 'N') v
                         on c.challengeId = v.challengeId
         where c.isDeleted = 'N'
-        order by endDate desc;
+        order by startDate, endDate;
         `;
         const [rows] = await connection.query(
             query

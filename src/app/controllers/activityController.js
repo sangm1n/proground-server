@@ -50,20 +50,24 @@ exports.runningStatistic = async function (req, res) {
 
             const currentLevel = await userDao.getUserLevel(userId);  
             const countMission = await runningDao.countClearMission(userId);
-            const levelLimit = await runningDao.getMaxDistance(currentLevel.level);
+            const levelLimit = await runningDao.getMaxDistance(currentLevel.level + 1);
 
             let X, Y;
             if (levelLimit.maxDistance - parseFloat(totalRows[0].totalDistance.slice(0, -2), 2) < 0) X = 0;
-            else X = levelLimit.maxDistance - parseFloat(totalRows[0].totalDistance.slice(0, -2), 2);
+            else X = (levelLimit.maxDistance - parseFloat(totalRows[0].totalDistance.slice(0, -2), 2)).toFixed(2);
             if (levelLimit.maxMission - countMission < 0) Y = 0;
             else Y = levelLimit.maxMission - countMission;
+
+            let sentence;
+            if (levelLimit > 5) sentence = '';
+            else sentence = `다음 레벨까지 ${X}km와 미션 ${Y}개 남았어요!`;
 
             const result = {
                 weekly: {
                     totalDistance: recentRows[0].totalDistance,
                     runningGraph: recentRows[1],
                     randomSentence: randomRows[Math.floor(Math.random() * randomRows.length)].text,
-                    staticSentence: `다음 레벨까지 ${X}km와 미션 ${Y}개 남았어요!`
+                    staticSentence: sentence
                 },
                 total: totalRows[0]
             }

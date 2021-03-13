@@ -9,7 +9,18 @@ exports.getUserChallenge = async function (userId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select challengeId from UserChallenge where userId = ? and isDeleted = 'N' and winStatus is null;
+        select c.challengeId,
+            str_to_date(date_format(startDate, '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H:%i:%s') as startDate,
+            str_to_date(date_format(date_add(endDate, interval + 1 day), '%Y-%m-%d 00:00:00'),
+                        '%Y-%m-%d %H:%i:%s')                                              as endDate
+        from UserChallenge uc
+                join Challenge c on uc.challengeId = c.challengeId
+        where userId = ?
+        and c.isDeleted = 'N'
+        and uc.isDeleted = 'N'
+        and winStatus is null
+        and str_to_date(date_format(startDate, '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H:%i:%s') <= now()
+        and now() < str_to_date(date_format(endDate, '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H:%i:%s');
         `;
         const params = [userId];
         const [rows] = await connection.query(query, params);
