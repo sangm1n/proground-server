@@ -94,3 +94,19 @@ exports.postUserNotice = async function (userId, noticeId, isSignedUp) {
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
+
+exports.getNoticeCount = async function () {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select count(noticeId) as noticeCount from Notice where isDeleted = 'N';
+        `;
+        const [rows] = await connection.query(query);
+        connection.release();
+
+        return rows[0]['noticeCount'];
+    } catch (err) {
+        logger.error(`App - getNoticeCount DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}

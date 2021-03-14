@@ -9,6 +9,7 @@ const crypto = require('crypto');
 const secret_config = require('../../../config/secret');
 
 const userDao = require('../dao/userDao');
+const noticeDao = require('../dao/noticeDao');
 const { constants } = require('buffer');
 
 const passport = require('passport')
@@ -447,12 +448,14 @@ exports.updateProfileImage = async function (req, res) {
 
     if (!req.file) return res.json(response.successFalse(3060, "프로필 이미지를 입력해주세요."));
     
-    try {        
+    try {   
+        /*     
         const profileRows = await userDao.getUserProfile(userId);
         const originProfile = profileRows.profileImage;
 
         const fileName = originProfile.split('/')[4];
         s3.erase('/profile', fileName);
+        */
 
         const newProfile = req.file.location;
         await userDao.patchProfileImage(newProfile, userId);
@@ -523,8 +526,14 @@ exports.nonUser = async function (req, res) {
 
     try {
         const nonUserRows = await userDao.postNonUser(fcmToken);
+        const noticeCount = await noticeDao.getNoticeCount();
+
+        const result = {
+            nonUserId: nonUserRows,
+            notReadNotice: noticeCount
+        }
         
-        return res.json(response.successTrue(1900, "비회원 생성에 성공하였습니다.", nonUserRows));
+        return res.json(response.successTrue(1900, "비회원 생성에 성공하였습니다.", result));
     } catch (err) {
         logger.error(`App - nonUser Query error\n: ${JSON.stringify(err)}`);
         return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));

@@ -395,7 +395,7 @@ exports.postNonUser = async function (fcmToken) {
         const [rows] = await connection.query( query );
         connection.release();
 
-        return rows[0];
+        return rows[0]['nonUserId'];
     } catch (err) {
         logger.error(`App - postNonUser DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
