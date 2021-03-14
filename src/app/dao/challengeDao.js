@@ -197,7 +197,7 @@ exports.getChallenge = async function (challengeId) {
             minLevel,
             maxLevel,
             timestampdiff(day, startDate, endDate) + 1 as period,
-            timestampdiff(day, now(), startDate)       as beforeDate,
+            timestampdiff(day, startDate, now()) + 1   as beforeDate,
             date_format(startDate, '%Y.%c.%e')         as startDate,
             date_format(endDate, '%Y.%c.%e')           as endDate
         from Challenge c

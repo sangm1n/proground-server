@@ -457,10 +457,10 @@ exports.getNotReadChatting = async function (userId, challengeId) {
                             and lastReadTime is not null
                             and isDeleted = 'N')
         and chattingId = parentChattingId
-        and challengeId = ?
+        and challengeId = ? and userId != ?
         and isDeleted = 'N';
         `;
-        const params = [userId, challengeId, challengeId];
+        const params = [userId, challengeId, challengeId, userId];
         const [firstRows] = await connection.query(query, params);
 
         query = `
@@ -472,7 +472,7 @@ exports.getNotReadChatting = async function (userId, challengeId) {
                         and challengeId = ?
                         and lastReadTime is not null
                         and isDeleted = 'N')
-        and challengeId = ?
+        and challengeId = ? and userId != ?
         and isDeleted = 'N';
         `
         const [secondRows] = await connection.query(query, params);

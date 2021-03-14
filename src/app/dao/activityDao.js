@@ -128,11 +128,12 @@ exports.getRunningHistory = async function (state) {
                             from RunningLike rl
                                     join Running r on rl.runningId = r.runningId
                             where status = 'Y'
-                            group by r.runningId) v on r.runningId = v.runningId
+                            group by startTime, endTime, distance, pace, calorie
+                            order by endTime desc) v on r.runningId = v.runningId
         where ` + state + `
         and isDeleted = 'N'
         group by endTime
-        order by endTime desc;
+        order by r.endTime desc;
         `;
         const [rows] = await connection.query(query);
 
