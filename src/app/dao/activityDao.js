@@ -130,7 +130,7 @@ exports.getRunningHistory = async function (state) {
                                     join Running r on rl.runningId = r.runningId
                             where status = 'Y'
                             group by r.runningId) v on r.runningId = v.runningId
-        where userId = ` + state + `
+        where ` + state + `
         and isDeleted = 'N'
         group by distance, time, pace, calorie
         order by r.endTime desc;
