@@ -312,3 +312,55 @@ exports.insertChallengeLeader = async function (userId, challengeId) {
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
+
+/**
+ * 한 번에 레벨 조정
+ */
+exports.getUserLevel = async function () {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select userId, level from UserLevel;
+        `;
+        const [rows] = await connection.query(query);
+        connection.release();
+        
+        return rows;
+    } catch (err) {
+        logger.error(`App - getUserLevel DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.getLevel = async function () {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select level, maxDistance, maxMission from Level;
+        `;
+        const [rows] = await connection.query(query);
+        connection.release();
+        
+        return rows;
+    } catch (err) {
+        logger.error(`App - getLevel DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.patchUserLevel = async function (userId, level) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        let query = `
+        select userId, level from UserLevel;
+        update UserLevel set userId = ?, level = ? where userId = ?;
+        `;
+        const params = [userId, level, userId];
+        await connection.query(query, params);
+
+        connection.release();
+    } catch (err) {
+        logger.error(`App - patchUserLevel DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}

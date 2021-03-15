@@ -3,11 +3,15 @@ const {logger} = require('../../../config/winston');
 const response = require('../../utils/response');
 
 const challengeDao = require('../dao/challengeDao');
+const activityDao = require('../dao/activityDao');
+const runningDao = require('../dao/runningDao');
 const adminDao = require('../dao/adminDao');
 const userDao = require('../dao/userDao');
 
 const notification = require('../../utils/notification');
 const s3 = require('../../utils/awsS3');
+const { userLevel } = require('./userController');
+const { level } = require('winston');
 
 /***
  * update : 2021-02-25
@@ -149,26 +153,26 @@ exports.createMission = async function (req, res) {
  */
 exports.modifyLevel = async function (req, res) {
     const userId = req.verifiedToken.userId;
-    const {
-        maxDistance, maxMission, levelColor
-    } = req.body;
 
-    if (maxDistance.length !== 9 || maxMission.length !== 9 || levelColor.length !== 9) return res.json(response.successFalse(2000, "모든 값은 배열에 9개씩 입력해주세요."));
-    for (var i = 0; i < 9; i++) {
-        if (maxDistance[i] < 0 || maxMission[i] < 0) return res.json(response.successFalse(2010, "배열에 음수는 올 수 없습니다."));
-        if (levelColor[i] !== null && (levelColor[i].length !== 7 || levelColor[i].substr(0, 1) !== '#')) return res.json(response.successFalse(2020, "레벨 색상은 #?????? 형식으로 입력해주세요."));
-    }
     try {
-        const checkRows = await adminDao.checkAdmin(userId);
-        if (checkRows === 0) return res.json(response.successFalse(3000, "관리자가 아닙니다."));
+        const userLevelRows = await adminDao.getUserLevel();
+        const levelRows = await adminDao.getLevel();
 
-        for (var i = 0; i < 9; i++) {
-            let level = i+1;
+        console.log(levelRows)
 
-            if (maxDistance[i] !== null) await adminDao.changeMaxDistance(level, maxDistance[i]);
-            if (maxMission[i] !== null) await adminDao.changeMaxMission(level, maxMission[i]);
-            if (levelColor[i] !== null) await adminDao.changeLevelColor(level, levelColor[i]);
-            logger.info(`레벨 ${level} 조정 완료`);
+        for (var i = 0; i < userLevelRows.length; i++) {
+            let userId = userLevelRows[i].userId;
+            let tmp = await activityDao.getTotalRunning(`userId = ${userId}`);
+            let totalDistance = tmp[0].totalDistance.slice(0, -2);
+            let countMission = await runningDao.countClearMission(userId);
+
+            for (var j = 0; j < levelRows.length; j++) {
+                console.log(userId, totalDistance, countMission);
+                if (totalDistance < levelRows[j].maxDistance || countMission < levelRows[j].maxMission) {
+                    await adminDao.patchUserLevel(userId, levelRows[j].level - 1);
+                    break;
+                }
+            }
         }
 
         return res.json(response.successTrue(1000, "레벨 조정에 성공하였습니다."));
