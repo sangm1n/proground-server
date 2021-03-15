@@ -155,10 +155,11 @@ exports.modifyLevel = async function (req, res) {
     const userId = req.verifiedToken.userId;
 
     try {
+        const checkRows = await adminDao.checkAdmin(userId);
+        if (checkRows === 0) return res.json(response.successFalse(3000, "관리자가 아닙니다."));
+
         const userLevelRows = await adminDao.getUserLevel();
         const levelRows = await adminDao.getLevel();
-
-        console.log(levelRows)
 
         for (var i = 0; i < userLevelRows.length; i++) {
             let userId = userLevelRows[i].userId;
@@ -167,7 +168,6 @@ exports.modifyLevel = async function (req, res) {
             let countMission = await runningDao.countClearMission(userId);
 
             for (var j = 0; j < levelRows.length; j++) {
-                console.log(userId, totalDistance, countMission);
                 if (totalDistance < levelRows[j].maxDistance || countMission < levelRows[j].maxMission) {
                     await adminDao.patchUserLevel(userId, levelRows[j].level - 1);
                     break;
@@ -215,9 +215,7 @@ exports.createNotice = async function (req, res) {
         } else await adminDao.postNotice(title, content, null, req.files.banner[0].location);
         logger.info('공지 생성 완료');
 
-        const userFcmRows = await userDao.getAllUser();
-        const nonUserFcmRows = await userDao.getAllNonUser();    
-        const totalFcmRows = [...userFcmRows, ...nonUserFcmRows];
+        const totalFcmRows = await userDao.getAllPushUser();
         
         for (var i = 0; i < totalFcmRows.length; i++) {
             if (totalFcmRows[i].fcmToken !== null) {
@@ -260,7 +258,7 @@ exports.spreadChallenge = async function (req, res) {
             for (var i = 0; i < challengeRows.length; i++) {
                 await adminDao.postUserMission(challengeRows[i].userId, typeId);
 
-                if (challengeRows[i].fcmToken !== null && challengeRows[i].isNotified === 'Y') {
+                if (challengeRows[i].fcmToken !== null && challengeRows[i].isNotified === 'Y' && challengeRows[i].isLogedIn === 'Y') {
                     notification('[프로그라운드]', '짜잔! 새로운 미션이 도착했어요!', challengeRows[i].fcmToken);
                 }
             }
@@ -270,7 +268,7 @@ exports.spreadChallenge = async function (req, res) {
             for (var i = 0; i < challengeRows.length; i++) {
                 await adminDao.postUserCard(challengeRows[i].userId, typeId);
 
-                if (challengeRows[i].fcmToken !== null && challengeRows[i].isNotified === 'Y') {
+                if (challengeRows[i].fcmToken !== null && challengeRows[i].isNotified === 'Y' && challengeRows[i].isLogedIn === 'Y') {
                     notification('[프로그라운드]', '우와! 새로운 카드✨ 가 도착했어요!', challengeRows[i].fcmToken);
                 }
             }
@@ -310,7 +308,7 @@ exports.spreadLevel = async function (req, res) {
             for (var i = 0; i < levelRows.length; i++) {
                 await adminDao.postUserMission(levelRows[i].userId, typeId);
 
-                if (levelRows[i].fcmToken !== null && levelRows[i].isNotified === 'Y') {
+                if (levelRows[i].fcmToken !== null && levelRows[i].isNotified === 'Y' && levelRows[i].isLogedIn === 'Y') {
                     notification('[프로그라운드]', '짜잔! 새로운 미션이 도착했어요!', levelRows[i].fcmToken);
                 }
             }
@@ -320,7 +318,7 @@ exports.spreadLevel = async function (req, res) {
             for (var i = 0; i < levelRows.length; i++) {
                 await adminDao.postUserCard(levelRows[i].userId, typeId);
 
-                if (levelRows[i].fcmToken !== null && levelRows[i].isNotified === 'Y') {
+                if (levelRows[i].fcmToken !== null && levelRows[i].isNotified === 'Y' && levelRows[i].isLogedIn === 'Y') {
                     notification('[프로그라운드]', '우와! 새로운 카드✨ 가 도착했어요!', levelRows[i].fcmToken);
                 }
             }
@@ -360,14 +358,14 @@ exports.spreadUser = async function (req, res) {
         if (type === "mission") {
             await adminDao.postUserMission(userRows.userId, typeId);
 
-            if (userRows.fcmToken !== null && userRows.isNotified === 'Y') {
+            if (userRows.fcmToken !== null && userRows.isNotified === 'Y' && userRows.isLogedIn === 'Y') {
                 notification('[프로그라운드]', '짜잔! 새로운 미션이 도착했어요!', userRows.fcmToken);
             }
             return res.json(response.successTrue(1000, "회원별 미션 부여에 성공하였습니다."));
         } else if (type === "card") {
             await adminDao.postUserCard(userRows.userId, typeId);
 
-            if (userRows.fcmToken !== null && userRows.isNotified === 'Y') {
+            if (userRows.fcmToken !== null && userRows.isNotified === 'Y' && userRows.isLogedIn === 'Y') {
                 notification('[프로그라운드]', '우와! 새로운 카드✨ 가 도착했어요!', userRows.fcmToken);
             }
             return res.json(response.successTrue(1010, "회원별 카드 부여에 성공하였습니다."));

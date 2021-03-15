@@ -160,7 +160,7 @@ exports.makeComment = async function (req, res) {
         else await chattingDao.postChatting(challengeId, userId, null, req.file.location, chattingId);
 
         const tmpRows = await chattingDao.getFcmByChattingId(chattingId);
-        if (chattingUserId.userId !== userId && tmpRows.isNotified === 'Y') {
+        if (chattingUserId.userId !== userId && tmpRows.isNotified === 'Y' && tmpRows.isLogedIn === 'Y') {
             notification('[프로그라운드]', `똑똑! ${tmpRows.nickname} 님의 채팅에 댓글💬 이 달렸어요!`, tmpRows.fcmToken);
         }
 

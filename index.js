@@ -22,10 +22,8 @@ moment.tz.setDefault("Asia/Seoul");
 
 schedule.scheduleJob('0 0 18 * * *', async function() {
     console.log('현재 ' + new Date());
-    const countRows = await runningDao.getRunningCount();
-    const userFcmRows = await userDao.getAllUser();
-    const nonUserFcmRows = await userDao.getAllNonUser();    
-    const totalFcmRows = [...userFcmRows, ...nonUserFcmRows];
+    const countRows = await runningDao.getRunningCount();  
+    const totalFcmRows = await userDao.getAllPushUser();
     
     for (var i = 0; i < totalFcmRows.length; i++) {
         if (totalFcmRows[i].fcmToken !== null) {

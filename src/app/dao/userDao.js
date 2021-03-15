@@ -443,7 +443,7 @@ exports.getAllUser = async function () {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select userId, fcmToken from User where isDeleted = 'N' and userType != 'A' and isNotified = 'Y';
+        select userId, fcmToken from User where isDeleted = 'N' and userType != 'A' and isNotified = 'Y' and isLogedIn = 'Y';
         `;
         const [rows] = await connection.query(query);
         connection.release();
@@ -459,7 +459,7 @@ exports.getAllNonUser = async function () {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select nonUserId, fcmToken from NonUser where isSignedUp = 'N' and isDeleted = 'N' and isNotified = 'Y';
+        select nonUserId, fcmToken from NonUser where isSignedUp = 'N' and isDeleted = 'N' and isNotified = 'Y' and isLogedIn = 'Y';
         `;
         const [rows] = await connection.query(query);
         connection.release();
@@ -471,11 +471,39 @@ exports.getAllNonUser = async function () {
     }
 }
 
+exports.getAllPushUser = async function () {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select fcmToken
+        from User
+        where isDeleted = 'N'
+        and userType != 'A'
+        and isNotified = 'Y'
+        and isLogedIn = 'Y'
+        union
+        distinct
+        select fcmToken
+        from NonUser
+        where isSignedUp = 'N'
+        and isDeleted = 'N'
+        and isNotified = 'Y';
+        `;
+        const [rows] = await connection.query(query);
+        connection.release();
+
+        return rows;
+    } catch (err) {
+        logger.error(`App - getAllPushUser DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
 exports.getAllUserChallenge = async function (challengeId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select distinct u.userId, nickname, fcmToken, isNotified
+        select distinct u.userId, nickname, fcmToken, isNotified, isLogedIn
         from User u
                 join UserChallenge uc on u.userId = uc.userId
         where u.isDeleted = 'N'
@@ -498,7 +526,7 @@ exports.getAllUserLevel = async function (level) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select distinct u.userId, nickname, fcmToken, isNotified
+        select distinct u.userId, nickname, fcmToken, isNotified, isLogedIn
         from User u
                 join UserLevel ul on u.userId = ul.userId
         where u.isDeleted = 'N'
@@ -520,7 +548,8 @@ exports.getUserFcmToken = async function (userId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select userId, nickname, fcmToken, isNotified from User where userId = ? and isDeleted = 'N' and userType = 'G';
+        select userId, nickname, fcmToken, isNotified, isLogedIn
+        from User where userId = ? and isDeleted = 'N' and userType = 'G';
         `;
         const params = [userId];
         const [rows] = await connection.query(query, params);

@@ -200,7 +200,7 @@ exports.likeRunning = async function (req, res) {
 
         const runningUserId = await runningDao.getUserIdByRunningId(runningId);
         const tmpRows = await runningDao.getFcmByRunningId(runningId);
-        if (runningUserId.userId !== userId && tmpRows.isNotified === 'Y') {
+        if (runningUserId.userId !== userId && tmpRows.isNotified === 'Y' && tmpRows.isLogedIn === 'Y') {
             notification('[프로그라운드]', `짝짝짝! 누군가 ${tmpRows.nickname} 님의 러닝을 응원🎉 했어요!`, tmpRows.fcmToken);
         }
 

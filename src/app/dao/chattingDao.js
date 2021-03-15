@@ -491,7 +491,7 @@ exports.getFcmByChattingId = async function (chattingId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select nickname, fcmToken, isNotified
+        select nickname, fcmToken, isNotified, isLogedIn
         from Chatting c join User u on c.userId = u.userId
         where chattingId = ?
         and c.isDeleted = 'N' and u.isDeleted = 'N';

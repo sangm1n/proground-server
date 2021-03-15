@@ -253,7 +253,7 @@ exports.getFcmByRunningId = async function (runningId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select nickname, fcmToken, isNotified
+        select nickname, fcmToken, isNotified, isLogedIn
         from Running r join User u on r.userId = u.userId
         where runningId = ?
         and r.isDeleted = 'N' and u.isDeleted = 'N';
