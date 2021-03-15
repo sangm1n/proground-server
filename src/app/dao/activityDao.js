@@ -103,7 +103,7 @@ exports.getRunningHistory = async function (state) {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
         select r.runningId,
-            concat(distance, 'km') as distance,
+            concat(distance, 'km')                               as distance,
             case
                 when timestampdiff(minute, startTime, endTime) < 1
                     then concat('시간 00:', lpad(concat(timestampdiff(second, startTime, endTime)), 2, 0))
@@ -118,21 +118,21 @@ exports.getRunningHistory = async function (state) {
                                             timestampdiff(hour, startTime, endTime) * 60), 2, 0), ':',
                                 lpad(concat(timestampdiff(second, startTime, endTime) -
                                             timestampdiff(minute, startTime, endTime) * 60), 2, 0))
-                end                          as time,
-            concat('페이스 ', substring_index(cast(pace as char), '.', 1), '''', substring_index(cast(pace as char), '.', -1)) as pace,
-            concat('소모 칼로리 ', calorie, 'kcal') as calorie,
-            ifnull(v.likeCount, 0)           as likeCount,
-            date_format(endTime, '%Y.%m.%d') as endTime
+                end                                              as time,
+            concat('페이스 ', substring_index(cast(pace as char), '.', 1), '''',
+                    substring_index(cast(pace as char), '.', -1)) as pace,
+            concat('소모 칼로리 ', calorie, 'kcal')                   as calorie,
+            sum(ifnull(v.likeCount, 0))                          as likeCount,
+            date_format(endTime, '%Y.%m.%d')                     as endTime
         from Running r
                 left join (select r.runningId, count(likeId) as likeCount
                             from RunningLike rl
                                     join Running r on rl.runningId = r.runningId
                             where status = 'Y'
-                            group by startTime, endTime, distance, pace, calorie
-                            order by endTime desc) v on r.runningId = v.runningId
-        where ` + state + `
+                            group by r.runningId) v on r.runningId = v.runningId
+        where userId = ` + state + `
         and isDeleted = 'N'
-        group by endTime
+        group by distance, time, pace, calorie
         order by r.endTime desc;
         `;
         const [rows] = await connection.query(query);
