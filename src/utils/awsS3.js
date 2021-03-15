@@ -17,6 +17,7 @@ const upload = (dir) => multer({
     })
 });
 
+/*
 const erase = (dir, image) => s3.deleteObject({
     Bucket: "proground" + dir,
     Key: image
@@ -25,7 +26,8 @@ const erase = (dir, image) => s3.deleteObject({
         logger.error(`S3 image delete error\n: ${JSON.stringify(err)}`);
     }
 });
+*/
 
 module.exports = {
-    upload, erase
+    upload
 };
