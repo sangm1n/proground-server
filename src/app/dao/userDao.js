@@ -572,7 +572,7 @@ exports.patchUserFcm = async function (fcmToken, userId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        update User set fcmToken = ? where userId = ?;
+        update User set fcmToken = ?, isLogedIn = 'Y' where userId = ?;
         `;
         const params = [fcmToken, userId];
         const [rows] = await connection.query(query, params);
@@ -630,6 +630,21 @@ exports.checkLeader = async function (userId) {
         return rows[0]['userType'];
     } catch (err) {
         logger.error(`App - checkLeader DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.userLogout = async function (userId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        update User set isLogedIn = 'N' where userId = ?;
+        `;
+        const params = [userId];
+        await connection.query(query, params);
+        connection.release();
+    } catch (err) {
+        logger.error(`App - userLogout DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }

@@ -53,7 +53,7 @@ exports.signUp = async function (req, res) {
         const nonUserRows = await userDao.checkNonUserId(nonUserId);
 
         if (emailRows === 1) return res.json(response.successFalse(3018, "이미 존재하는 이메일입니다."));
-        if (nicknameRows === 1) return res.json(response.successFalse(3017, "이미 존재하는 닉네임입니다."));
+        // if (nicknameRows === 1) return res.json(response.successFalse(3017, "이미 존재하는 닉네임입니다."));
         if (nonUserRows === 0) return res.json(response.successFalse(3019, "존재하지 않는 비회원 사용자입니다."));
 
         await userDao.updateNonUserStatus(nonUserId);
@@ -294,6 +294,23 @@ exports.logInKakao = async function (req, res) {
         }
     } catch (err) {
         logger.error(`App - logInKakao Query error\n: ${JSON.stringify(err)}`);
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+    }
+}
+
+/***
+ * update : 2021-03-15
+ * 로그아웃 API
+ */
+exports.logout = async function (req, res) {
+    const userId = req.verifiedToken.userId; 
+
+    try {
+        await userDao.userLogout(userId);
+
+        return res.json(response.successTrue(1000, "로그아웃에 성공하였습니다."));
+    } catch (err) {
+        logger.error(`App - logout Query error\n: ${JSON.stringify(err)}`);
         return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
     }
 }
