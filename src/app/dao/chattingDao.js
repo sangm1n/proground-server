@@ -10,7 +10,7 @@ exports.getChatting = async function (userId, challengeId) {
         const connection = await pool.getConnection(async (conn) => conn);
         let query = `
         select distinct c.chattingId,
-                        uc.challengeTeamName,
+                        ifnull(uc.challengeTeamName, '리더') as challengeTeamName,
                         ifnull(v.countChatting, 0)        as more,
                         u.userId,
                         u.nickname,
@@ -310,7 +310,7 @@ exports.getEachChatting = async function (challengeId, chattingId) {
                         u.nickname,
                         u.profileImage,
                         v.levelColor,
-                        w.challengeTeamName,
+                        ifnull(w.challengeTeamName, '리더') as challengeTeamName,
                         w.challengeColor,
                         c.message,
                         c.image,
@@ -346,7 +346,7 @@ exports.getEachChatting = async function (challengeId, chattingId) {
                         u.nickname,
                         u.profileImage,
                         v.levelColor,
-                        w.challengeTeamName,
+                        ifnull(w.challengeTeamName, '리더') as challengeTeamName,
                         w.challengeColor,
                         c.message,
                         c.image,
