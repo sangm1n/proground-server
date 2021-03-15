@@ -176,7 +176,7 @@ exports.getChatting = async function (userId, challengeId) {
                             group by rl.runningId) v on v.runningId = r.runningId
         where u.isDeleted = 'N'
         and r.isDeleted = 'N'
-        and challengeId = ?
+        and challengeId = ? and userType = 'G'
         order by endTime desc;
         `
         params = [userId, challengeId];
