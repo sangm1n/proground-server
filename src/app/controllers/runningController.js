@@ -55,54 +55,80 @@ exports.recordRunning = async function (req, res) {
         } else {
             const userId = token.userId;
             const challengeRows = await runningDao.getUserChallenge(userId);
-            
-            if (challengeRows.length < 1) {
-                await runningDao.postRunning(-1, userId, -1, distance, startTime, endTime, pace, altitude, calorie);
-            } else {
-                for (var i = 0; i < challengeRows.length; i++) {
-                    let challengeId = challengeRows[i].challengeId;
 
-                    await runningDao.postRunning(challengeId, userId, -1, distance, startTime, endTime, pace, altitude, calorie);
-                }
-            }
-            logger.info(`userId ${userId}번 러닝 기록 저장 완료`);
-            
-            if (section !== undefined) {
-                const state = 'userId = ' + token.userId;
-                const runningIdRows = await runningDao.getRunningId(state, distance, startTime, endTime, pace, altitude, calorie);
-
-                for (var i = 0; i < runningIdRows.length; i++) {
-                    let runningId = runningIdRows[i].runningId;
-                    for (var j = 0; j < section.length; j++) {
-                        let distance = parseFloat(j+1).toFixed(2);
-                        let pace = parseFloat(section[j]).toFixed(2);
-                        await runningDao.postRunningSection(runningId, distance, pace);
+            const userRows = await userDao.getUserProfile(userId);
+            if (userRows.userType === 'G') {
+                if (challengeRows.length < 1) {
+                    await runningDao.postRunning(-1, userId, -1, distance, startTime, endTime, pace, altitude, calorie);
+                } else {
+                    for (var i = 0; i < challengeRows.length; i++) {
+                        let challengeId = challengeRows[i].challengeId;
+    
+                        await runningDao.postRunning(challengeId, userId, -1, distance, startTime, endTime, pace, altitude, calorie);
                     }
                 }
-                logger.info(`userId ${userId}번 구간 페이스 저장 완료`);
-            }
-            let result;
-            if (missionId) {
-                const timeDiff = (new Date(endTime) - new Date(startTime)) / 60000;
-                const missionRows = await runningDao.getMissionInfo(missionId);
-                if (distance >= missionRows.distance && timeDiff < missionRows.time) {
-                    await runningDao.setMissionComplete(pace, userId, missionId);
-                    mission = {
-                        distance: missionRows.distance,
-                        time: missionRows.time,
-                        leader: missionRows.nickname
-                    };
-                    logger.info(`${missionId}번 미션 달성 !`);
-
-                    result = {mission};
-                    
+                logger.info(`userId ${userId}번 러닝 기록 저장 완료`);
+                
+                if (section !== undefined) {
+                    const state = 'userId = ' + token.userId;
+                    const runningIdRows = await runningDao.getRunningId(state, distance, startTime, endTime, pace, altitude, calorie);
+    
+                    for (var i = 0; i < runningIdRows.length; i++) {
+                        let runningId = runningIdRows[i].runningId;
+                        for (var j = 0; j < section.length; j++) {
+                            let distance = parseFloat(j+1).toFixed(2);
+                            let pace = parseFloat(section[j]).toFixed(2);
+                            await runningDao.postRunningSection(runningId, distance, pace);
+                        }
+                    }
+                    logger.info(`userId ${userId}번 구간 페이스 저장 완료`);
+                }
+                let result;
+                if (missionId) {
+                    const timeDiff = (new Date(endTime) - new Date(startTime)) / 60000;
+                    const missionRows = await runningDao.getMissionInfo(missionId);
+                    if (distance >= missionRows.distance && timeDiff < missionRows.time) {
+                        await runningDao.setMissionComplete(pace, userId, missionId);
+                        mission = {
+                            distance: missionRows.distance,
+                            time: missionRows.time,
+                            leader: missionRows.nickname
+                        };
+                        logger.info(`${missionId}번 미션 달성 !`);
+    
+                        result = {mission};
+                        
+                        const state = 'userId = ' + userId;
+                        const totalRows = await activityDao.getTotalRunning(state);
+                        let currentLevel = await userDao.getUserLevel(userId);
+                        currentLevel = currentLevel.level;
+                        const countMission = await runningDao.countClearMission(userId);
+                        let newLevel = 0;
+    
+                        for (var i = currentLevel + 1; i < 10; i++) {
+                            let levelInfo = await runningDao.getMaxDistance(i);
+                            if (levelInfo.maxDistance <= totalRows[0].totalDistance.slice(0, -2) &&
+                            levelInfo.maxMission <= countMission) {
+                                newLevel = i;
+                            }
+                        }
+    
+                        if (newLevel !== 0) {
+                            await runningDao.updateUserLevel(newLevel, userId);
+                            nextLevel = 'Lv. ' + (newLevel);
+                            result = {mission, level: nextLevel};
+    
+                            logger.info(`${userId}번 사용자 ${newLevel}로 레벨 업 !`);
+                        }
+                    }
+                } else {
                     const state = 'userId = ' + userId;
                     const totalRows = await activityDao.getTotalRunning(state);
                     let currentLevel = await userDao.getUserLevel(userId);
                     currentLevel = currentLevel.level;
                     const countMission = await runningDao.countClearMission(userId);
                     let newLevel = 0;
-
+    
                     for (var i = currentLevel + 1; i < 10; i++) {
                         let levelInfo = await runningDao.getMaxDistance(i);
                         if (levelInfo.maxDistance <= totalRows[0].totalDistance.slice(0, -2) &&
@@ -110,40 +136,18 @@ exports.recordRunning = async function (req, res) {
                             newLevel = i;
                         }
                     }
-
+    
                     if (newLevel !== 0) {
                         await runningDao.updateUserLevel(newLevel, userId);
-                        nextLevel = 'Lv. ' + (newLevel);
-                        result = {mission, level: nextLevel};
-
+                        result = {level: 'Lv. ' + (newLevel)};
+    
                         logger.info(`${userId}번 사용자 ${newLevel}로 레벨 업 !`);
                     }
                 }
-            } else {
-                const state = 'userId = ' + userId;
-                const totalRows = await activityDao.getTotalRunning(state);
-                let currentLevel = await userDao.getUserLevel(userId);
-                currentLevel = currentLevel.level;
-                const countMission = await runningDao.countClearMission(userId);
-                let newLevel = 0;
-
-                for (var i = currentLevel + 1; i < 10; i++) {
-                    let levelInfo = await runningDao.getMaxDistance(i);
-                    if (levelInfo.maxDistance <= totalRows[0].totalDistance.slice(0, -2) &&
-                    levelInfo.maxMission <= countMission) {
-                        newLevel = i;
-                    }
-                }
-
-                if (newLevel !== 0) {
-                    await runningDao.updateUserLevel(newLevel, userId);
-                    result = {level: 'Lv. ' + (newLevel)};
-
-                    logger.info(`${userId}번 사용자 ${newLevel}로 레벨 업 !`);
-                }
+                return res.json(response.successTrue(1500, "회원 러닝 기록에 성공하였습니다.", result));
             }
-
-            return res.json(response.successTrue(1500, "회원 러닝 기록에 성공하였습니다.", result));
+            
+            return res.json(response.successTrue(1500, "회원 러닝 기록에 성공하였습니다."));
         }
     } catch (err) {
         logger.error(`App - recordRunning Query error\n: ${err.message}`);
