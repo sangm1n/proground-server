@@ -351,8 +351,8 @@ exports.spreadUser = async function (req, res) {
         const checkRows = await adminDao.checkLeader(uuserId);
         if (checkRows === 0) return res.json(response.successFalse(3000, "리더가 아닙니다."));
 
-        const profileRows = await userDao.getUserProfile(userId);
-        if (profileRows === undefined) return res.json(response.successFalse(3010, "존재하지 않는 사용자입니다."));
+        const profileRows = await userDao.checkUserId(userId);
+        if (profileRows === 0) return res.json(response.successFalse(3010, "존재하지 않는 사용자입니다."));
 
         const userRows = await userDao.getUserFcmToken(userId);
         if (type === "mission") {
