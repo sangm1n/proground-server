@@ -677,3 +677,20 @@ exports.userLogout = async function (userId) {
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
+
+exports.getUserLevelColor = async function (userId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select l.levelColor from UserLevel ul join Level l on ul.level = l.level where userId = ?;
+        `;
+        const params = [userId];
+        const [rows] = await connection.query(query, params);
+        connection.release();
+
+        return rows[0];
+    } catch (err) {
+        logger.error(`App - getUserLevelColor DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}

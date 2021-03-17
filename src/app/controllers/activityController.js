@@ -51,6 +51,7 @@ exports.runningStatistic = async function (req, res) {
             const currentLevel = await userDao.getUserLevel(userId);  
             const countMission = await runningDao.countClearMission(userId);
             const levelLimit = await runningDao.getMaxDistance(currentLevel.level + 1);
+            const levelColorRows = await userDao.getUserLevelColor(userId);
 
             let X, Y;
             if (levelLimit.maxDistance - parseFloat(totalRows[0].totalDistance.slice(0, -2), 2) < 0) X = 0;
@@ -66,6 +67,7 @@ exports.runningStatistic = async function (req, res) {
                 weekly: {
                     totalDistance: recentRows[0].totalDistance,
                     runningGraph: recentRows[1],
+                    levelColor: levelColorRows.levelColor,
                     randomSentence: randomRows[Math.floor(Math.random() * randomRows.length)].text,
                     staticSentence: sentence
                 },
