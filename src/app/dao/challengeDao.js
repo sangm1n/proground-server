@@ -326,7 +326,7 @@ exports.checkRegisterChallenge = async function (userId, challengeId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select exists(select userId from UserChallenge where userId = ? and challengeId = ? and challengeColor is not null and isDeleted = 'N') as exist;
+        select exists(select userId from UserChallenge where userId = ? and challengeId = ? and isDeleted = 'N') as exist;
         `;
         const params = [userId, challengeId];
         const [rows] = await connection.query(
@@ -824,8 +824,7 @@ exports.getGoalGraphToday = async function (userId, challengeId) {
                         str_to_date(date_format(date_add(now(), interval +1 day), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H')) w
         where u.userId = ?
         and challengeId = ?
-        and r.isDeleted = 'N'
-        group by u.userId;
+        and r.isDeleted = 'N';
         `;
         let params = [challengeId, challengeId, userId, challengeId, userId, userId, challengeId];
         const [firstRows] = await connection.query(query, params);
@@ -874,7 +873,34 @@ exports.getGoalGraphToday = async function (userId, challengeId) {
         firstRows[0].ratio = parseFloat(firstRatio);
         secondRows[0].ratio = parseFloat(secondRatio);
 
+        query = `
+        select u.userId, nickname, profileImage, levelColor
+        from User u
+                join UserLevel ul on u.userId = ul.userId
+                join Level l on ul.level = l.level
+        where u.userId = ?;
+        `
+        params = [userId];
+        const [tmpUser] = await connection.query(query, params);
+
+        query = `
+        select challengeId, challengeColor, challengeTeamName 
+        from UserChallenge uc
+        where userId = ? and challengeId = ? and isDeleted = 'N';
+        `
+        params = [userId, challengeId];
+        const [tmpChallenge] = await connection.query(query, params);
+
         connection.release();
+
+        if (firstRows[0].userId === null) firstRows[0].userId = tmpUser[0].userId;
+        if (firstRows[0].nickname === null) firstRows[0].nickname = tmpUser[0].nickname;
+        if (firstRows[0].profileImage === null) firstRows[0].profileImage = tmpUser[0].profileImage; 
+        if (firstRows[0].levelColor === null) firstRows[0].levelColor = tmpUser[0].levelColor; 
+
+        if (secondRows[0].challengeId === null) secondRows[0].challengeId = tmpChallenge[0].challengeId;
+        if (secondRows[0].challengeColor === null) secondRows[0].challengeColor = tmpChallenge[0].challengeColor;
+        if (secondRows[0].challengeTeamName === null) secondRows[0].challengeTeamName = tmpChallenge[0].challengeTeamName;
 
         return [firstRows[0], secondRows[0]];
     } catch (err) {
@@ -978,6 +1004,34 @@ exports.getGoalGraphTotal = async function (userId, challengeId) {
 
         firstRows[0].ratio = parseFloat(firstRatio);
         secondRows[0].ratio = parseFloat(secondRatio);
+
+        query = `
+        select u.userId, nickname, profileImage, levelColor
+        from User u
+                join UserLevel ul on u.userId = ul.userId
+                join Level l on ul.level = l.level
+        where u.userId = ?;
+        `
+        params = [userId];
+        const [tmpUser] = await connection.query(query, params);
+
+        query = `
+        select challengeId, challengeColor, challengeTeamName 
+        from UserChallenge uc
+        where userId = ? and challengeId = ? and isDeleted = 'N';
+        `
+        params = [userId, challengeId];
+        const [tmpChallenge] = await connection.query(query, params);
+
+        connection.release();
+
+        if (firstRows[0].userId === null) firstRows[0].userId = tmpUser[0].userId;
+        if (firstRows[0].nickname === null) firstRows[0].nickname = tmpUser[0].nickname;
+        if (firstRows[0].levelColor === null) firstRows[0].levelColor = tmpUser[0].levelColor; 
+
+        if (secondRows[0].challengeId === null) secondRows[0].challengeId = tmpChallenge[0].challengeId;
+        if (secondRows[0].challengeColor === null) secondRows[0].challengeColor = tmpChallenge[0].challengeColor;
+        if (secondRows[0].challengeTeamName === null) secondRows[0].challengeTeamName = tmpChallenge[0].challengeTeamName;
 
         connection.release();
         return [firstRows[0], secondRows[0]];
