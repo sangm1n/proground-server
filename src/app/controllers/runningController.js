@@ -161,12 +161,33 @@ exports.recordRunning = async function (req, res) {
  * 오늘 달린 회원 수 조회 API
  */
 exports.countRunning = async function (req, res) {
+    let token = req.headers['x-access-token'] || req.query.token;
+    let {
+        nonUserId
+    } = req.body;
+
+    if (token) token = jwt.verify(token, secret_config.jwtsecret);
+    if (token === undefined && nonUserId === undefined) return res.json(response.successFalse(2510, "비회원 Id를 입력해주세요."));
+
     try {
         const countRows = await runningDao.getRunningCount();
-
         if (!countRows) return res.json(response.successFalse(3510, "오늘 달린 회원 수 조회에 실패하였습니다."));
 
-        return res.json(response.successTrue(1510, "오늘 달린 회원 수 조회에 성공하였습니다.", countRows));
+        let userType;
+        // 비회원
+        if (token === undefined) {
+            userType = 'G';
+        } else {
+            const userInfoRows = await userDao.getUserProfile(token.userId);
+            userType = userInfoRows.userType;
+        }
+
+        const result = {
+            runningCount: countRows.runningCount,
+            userType: userType
+        }
+
+        return res.json(response.successTrue(1510, "오늘 달린 회원 수 조회에 성공하였습니다.", result));
     } catch (err) {
         logger.error(`App - countRunning Query error\n: ${err.message}`);
         return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
