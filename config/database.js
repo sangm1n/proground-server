@@ -18,7 +18,7 @@ if (process.env.NODE_ENV === 'development') {
         host: 'proground-db.c0k2uowx07nn.ap-northeast-2.rds.amazonaws.com',
         user: 'admin',
         password: 'dl362514',
-        database: 'ProdDB',
+        database: 'DevDB',
         multipleStatements: true
     })
 }
