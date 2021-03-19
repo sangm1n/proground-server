@@ -165,19 +165,19 @@ exports.getLeaderMyChallenge = async function (userId) {
 }
 
 // 개별 챌린지 조회
-exports.challengeStartDate = async function (challengeId) {
+exports.challengeDate = async function (challengeId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         let query = `
-        select startDate from Challenge where challengeId = ? and isDeleted = 'N';
+        select startDate, date_add(endDate, interval 1 day) as endDate from Challenge where challengeId = ? and isDeleted = 'N';
         `;
         const params = [challengeId];
         const [rows] = await connection.query(query, params);
         connection.release();
 
-        return rows[0]['startDate'];
+        return rows[0];
     } catch (err) {
-        logger.error(`App - challengeStartDate DB Connection error\n: ${err.message}`);
+        logger.error(`App - challengeDate DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }

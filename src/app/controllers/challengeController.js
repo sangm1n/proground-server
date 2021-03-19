@@ -90,7 +90,7 @@ exports.challengeInfo = async function (req, res) {
             const checkRegRows = await challengeDao.checkRegisterChallenge(userId, challengeId);
             const checkLevelRows = await challengeDao.checkChallengeLevel(userId, challengeId);
             const checkMaxRows = await challengeDao.checkMaxChallenge(userId);
-            const startDate = await challengeDao.challengeStartDate(challengeId);
+            const dateRows = await challengeDao.challengeDate(challengeId);
             const countMembers = await challengeDao.getChallengeMembers(challengeId);
             const checkLeader = await userDao.checkLeader(userId);
             const checkOpenLeader = await challengeDao.checkOpenLeader(userId, challengeId);
@@ -98,7 +98,7 @@ exports.challengeInfo = async function (req, res) {
             if (checkRegRows === 1 || (checkLeader === 'L' && checkOpenLeader === 1)) {
                 status = 'C';
             } else if (checkLevelRows === 0 || checkMaxRows >= maxChallenge 
-                || startDate <= new Date() || countMembers >= challengeRows.personnel 
+                || dateRows.endDate <= new Date() ||countMembers >= challengeRows.personnel 
                 || (checkLeader === 'L' && checkOpenLeader !== 1)) {
                 status = 'B';
             } else {
