@@ -28,11 +28,12 @@ exports.recordRunning = async function (req, res) {
     if (pace === undefined) return res.json(response.successFalse(2503, "러닝 페이스를 입력해주세요."));
     if (altitude === undefined) return res.json(response.successFalse(2504, "러닝 고도를 입력해주세요."));
     if (calorie === undefined) return res.json(response.successFalse(2505, "러닝 소모 칼로리를 입력해주세요.")); 
+    if (!req.file) return res.json(response.successFalse(2506, "프로필 이미지를 입력해주세요."));
 
     try {
         // 비회원
         if (token === undefined) {
-            await runningDao.postRunning(-1, -1, nonUserId, distance, startTime, endTime, pace, altitude, calorie);
+            await runningDao.postRunning(-1, -1, nonUserId, distance, startTime, endTime, pace, altitude, calorie, req.file.location);
             logger.info(`nonUserId ${nonUserId}번 러닝 기록 저장 완료`);
 
             if (section !== undefined) {
@@ -59,12 +60,12 @@ exports.recordRunning = async function (req, res) {
             const userRows = await userDao.getUserProfile(userId);
             if (userRows.userType === 'G') {
                 if (challengeRows.length < 1) {
-                    await runningDao.postRunning(-1, userId, -1, distance, startTime, endTime, pace, altitude, calorie);
+                    await runningDao.postRunning(-1, userId, -1, distance, startTime, endTime, pace, altitude, calorie, req.file.location);
                 } else {
                     for (var i = 0; i < challengeRows.length; i++) {
                         let challengeId = challengeRows[i].challengeId;
     
-                        await runningDao.postRunning(challengeId, userId, -1, distance, startTime, endTime, pace, altitude, calorie);
+                        await runningDao.postRunning(challengeId, userId, -1, distance, startTime, endTime, pace, altitude, calorie, req.file.location);
                     }
                 }
                 logger.info(`userId ${userId}번 러닝 기록 저장 완료`);
@@ -213,6 +214,33 @@ exports.likeRunning = async function (req, res) {
         return res.json(response.successTrue(1600, "러닝 좋아요 클릭에 성공하였습니다.", {likeStatus: result}));
     } catch (err) {
         logger.error(`App - likeRunning Query error\n: ${err.message}`);
+        return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
+    }
+}
+
+/***
+ * update : 2021-03-19
+ * 러닝 페이지 조회 API
+ */
+exports.runningPage = async function (req, res) {
+    let token = req.headers['x-access-token'] || req.query.token;
+    if (token) token = jwt.verify(token, secret_config.jwtsecret);
+
+    const {
+        runningId
+    } = req.params;
+    
+    if (!runningId) return res.json(response.successFalse(2600, "러닝 번호를 입력해주세요."));
+
+    try {
+        const checkRows = await runningDao.checkRunningId(runningId);
+        if (checkRows === 0) return res.json(response.successFalse(3600, "존재하지 않는 러닝입니다."));
+
+        const result = await runningDao.getRunningPage(runningId);
+
+        return res.json(response.successTrue(1000, "러닝 페이지 조회에 성공하였습니다.", result));
+    } catch (err) {
+        logger.error(`App - runningPage Query error\n: ${err.message}`);
         return res.json(response.successFalse(4000, "서버와의 통신에 실패하였습니다."));
     }
 }

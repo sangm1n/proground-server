@@ -51,14 +51,14 @@ exports.getUserId = async function () {
 }
 
 // 러닝 기록 입력
-exports.postRunning = async function (challengeId, userId, nonUserId, distance, startTime, endTime, pace, altitude, calorie) {
+exports.postRunning = async function (challengeId, userId, nonUserId, distance, startTime, endTime, pace, altitude, calorie, mapImage) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        insert into Running (challengeId, userId, nonUserId, distance, startTime, endTime, pace, altitude, calorie)
-        values (?, ?, ?, ?, ?, ?, ?, ?, ?);
+        insert into Running (challengeId, userId, nonUserId, distance, startTime, endTime, pace, altitude, calorie, mapImage)
+        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         `;
-        const params = [challengeId, userId, nonUserId, distance, startTime, endTime, pace, altitude, calorie];
+        const params = [challengeId, userId, nonUserId, distance, startTime, endTime, pace, altitude, calorie, mapImage];
         const [rows] = await connection.query(query, params);
         connection.release();
     } catch (err) {
@@ -380,6 +380,75 @@ exports.getUserIdByRunningId = async function (runningId) {
         return rows[0];
     } catch (err) {
         logger.error(`App - getUserIdByRunningId DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.getRunningPage = async function (runningId) {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        let query = `
+        select concat(
+                    case dayofweek(endTime)
+                        WHEN '1' THEN '일요일'
+                        WHEN '2' THEN '월요일'
+                        WHEN '3' THEN '화요일'
+                        WHEN '4' THEN '수요일'
+                        WHEN '5' THEN '목요일'
+                        WHEN '6' THEN '금요일'
+                        WHEN '7' THEN '토요일' end, ' ',
+                    case date_format(endTime, '%p')
+                        when 'PM' then '오후'
+                        when 'AM' then '오전' end, ' ',
+                    date_format(endTime, '%l:%i'), ' 러닝'
+                )                                                as endTime,
+            cast(distance as double) as distance,
+            case
+                when timestampdiff(minute, startTime, endTime) < 1
+                    then concat('00:', lpad(concat(timestampdiff(second, startTime, endTime)), 2, 0))
+                when timestampdiff(minute, startTime, endTime) >= 1 and
+                    timestampdiff(minute, startTime, endTime) < 60
+                    then concat(lpad(concat(timestampdiff(minute, startTime, endTime)), 2, 0), ':',
+                                lpad(concat(timestampdiff(second, startTime, endTime) -
+                                            timestampdiff(minute, startTime, endTime) * 60), 2, 0))
+                when timestampdiff(minute, startTime, endTime) >= 60
+                    then concat(lpad(concat(timestampdiff(hour, startTime, endTime)), 2, 0), ':',
+                                lpad(concat(timestampdiff(minute, startTime, endTime) -
+                                            timestampdiff(hour, startTime, endTime) * 60), 2, 0), ':',
+                                lpad(concat(timestampdiff(second, startTime, endTime) -
+                                            timestampdiff(minute, startTime, endTime) * 60), 2, 0))
+                end                                              as time,
+            concat(substring_index(cast(pace as char), '.', 1), '''',
+                substring_index(cast(pace as char), '.', -1)) as pace,
+            altitude,
+            calorie,
+            mapImage
+        from Running
+        where runningId = ?
+        and isDeleted = 'N';
+        `;
+        const params = [runningId];
+        const [pageRows] = await connection.query(query, params);
+
+        query = `
+        select distance, 
+        concat(substring_index(cast(pace as char), '.', 1), '''',
+                substring_index(cast(pace as char), '.', -1)) as pace
+        from RunningSection
+        where runningId = ?
+        order by sectionId;
+        `
+        const [sectionRows] = await connection.query(query, params);
+        connection.release();
+
+        const result = {
+            running: pageRows[0],
+            section: sectionRows
+        }
+
+        return result;
+    } catch (err) {
+        logger.error(`App - getRunningPage DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
