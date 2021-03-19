@@ -5,3 +5,5 @@ log/*
 .DS_Store
 nohup.out
 HELP.md
+config/awsconfig.json
+config/secret.js

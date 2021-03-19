@@ -5,6 +5,7 @@ let pool;
 
 if (process.env.NODE_ENV === 'development') {
     pool = mysql.createPool({
+        connectionLimit: 20,
         host: 'proground-db.c0k2uowx07nn.ap-northeast-2.rds.amazonaws.com',
         user: 'admin',
         password: 'dl362514',
@@ -13,10 +14,11 @@ if (process.env.NODE_ENV === 'development') {
     })
 } else if (process.env.NODE_ENV === 'production') {
     pool = mysql.createPool({
+        connectionLimit: 20,
         host: 'proground-db.c0k2uowx07nn.ap-northeast-2.rds.amazonaws.com',
         user: 'admin',
         password: 'dl362514',
-        database: 'ProdDB',
+        database: 'DevDB',
         multipleStatements: true
     })
 }
