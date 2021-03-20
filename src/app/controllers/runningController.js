@@ -35,11 +35,11 @@ exports.recordRunning = async function (req, res) {
         if (token === undefined) {
             await runningDao.postRunning(-1, -1, nonUserId, distance, startTime, endTime, pace, altitude, calorie, req.file.location);
             logger.info(`nonUserId ${nonUserId}번 러닝 기록 저장 완료`);
+            
+            const state = 'nonUserId = ' + nonUserId;
+            const runningIdRows = await runningDao.getRunningId(state, distance, startTime, endTime, pace, altitude, calorie);
 
             if (section !== undefined) {
-                const state = 'nonUserId = ' + nonUserId;
-                const runningIdRows = await runningDao.getRunningId(state, distance, startTime, endTime, pace, altitude, calorie);
-
                 for (var i = 0; i < runningIdRows.length; i++) {
                     let runningId = runningIdRows[i].runningId;
                     for (var j = 0; j < section.length; j++) {
@@ -51,13 +51,16 @@ exports.recordRunning = async function (req, res) {
                 logger.info(`nonUserId ${nonUserId}번 구간 페이스 저장 완료`);
             }
             
-            return res.json(response.successTrue(1501, "비회원 러닝 기록에 성공하였습니다."));
+            return res.json(response.successTrue(1501, "비회원 러닝 기록에 성공하였습니다.", { runningId: runningIdRows[0].runningId }));
         // 회원
         } else {
             const userId = token.userId;
             const challengeRows = await runningDao.getUserChallenge(userId);
-
             const userRows = await userDao.getUserProfile(userId);
+
+            let state;
+            let runningIdRows;
+
             if (userRows.userType === 'G') {
                 if (challengeRows.length < 1) {
                     await runningDao.postRunning(-1, userId, -1, distance, startTime, endTime, pace, altitude, calorie, req.file.location);
@@ -69,11 +72,11 @@ exports.recordRunning = async function (req, res) {
                     }
                 }
                 logger.info(`userId ${userId}번 러닝 기록 저장 완료`);
+
+                state = 'userId = ' + token.userId;
+                runningIdRows = await runningDao.getRunningId(state, distance, startTime, endTime, pace, altitude, calorie);
                 
                 if (section !== undefined) {
-                    const state = 'userId = ' + token.userId;
-                    const runningIdRows = await runningDao.getRunningId(state, distance, startTime, endTime, pace, altitude, calorie);
-    
                     for (var i = 0; i < runningIdRows.length; i++) {
                         let runningId = runningIdRows[i].runningId;
                         for (var j = 0; j < section.length; j++) {
@@ -97,7 +100,7 @@ exports.recordRunning = async function (req, res) {
                         };
                         logger.info(`${missionId}번 미션 달성 !`);
     
-                        result = {mission};
+                        result = {mission, runningId: runningIdRows[0].runningId};
                         
                         const state = 'userId = ' + userId;
                         const totalRows = await activityDao.getTotalRunning(state);
@@ -117,7 +120,7 @@ exports.recordRunning = async function (req, res) {
                         if (newLevel !== 0) {
                             await runningDao.updateUserLevel(newLevel, userId);
                             nextLevel = 'Lv. ' + (newLevel);
-                            result = {mission, level: nextLevel};
+                            result = {mission, level: nextLevel, runningId: runningIdRows[0].runningId};
     
                             logger.info(`${userId}번 사용자 ${newLevel}로 레벨 업 !`);
                         }
@@ -140,14 +143,15 @@ exports.recordRunning = async function (req, res) {
     
                     if (newLevel !== 0) {
                         await runningDao.updateUserLevel(newLevel, userId);
-                        result = {level: 'Lv. ' + (newLevel)};
+                        result = {level: 'Lv. ' + (newLevel), runningId: runningIdRows[0].runningId};
     
                         logger.info(`${userId}번 사용자 ${newLevel}로 레벨 업 !`);
+                    } else {
+                        result = {runningId: runningIdRows[0].runningId};
                     }
                 }
                 return res.json(response.successTrue(1500, "회원 러닝 기록에 성공하였습니다.", result));
             }
-            
             return res.json(response.successTrue(1500, "회원 러닝 기록에 성공하였습니다."));
         }
     } catch (err) {
