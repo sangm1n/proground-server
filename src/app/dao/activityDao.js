@@ -211,7 +211,7 @@ exports.getChallengeHistory = async function (userId) {
                             and isDeleted = 'N'
                             group by challengeId) v on c.challengeId = v.challengeId
         where c.isDeleted = 'N'
-        and uc.winStatus = 'W'
+        and uc.winStatus is not null
         and uc.isDeleted = 'N'
         and uc.userId = ?
         and endDate < str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H')
