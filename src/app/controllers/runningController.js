@@ -177,7 +177,14 @@ exports.countRunning = async function (req, res) {
 
     try {
         const countRows = await runningDao.getRunningCount();
-        if (!countRows) return res.json(response.successFalse(3510, "오늘 달린 회원 수 조회에 실패하였습니다."));
+        const distRows = await runningDao.getTotalDistance();
+        const calorieRows = await runningDao.getTotalCalorie();
+
+        if (!countRows || !distRows || !calorieRows) return res.json(response.successFalse(3510, "랜덤 문구 조회에 실패하였습니다."));
+
+        const totalRows = [`프로그라운드에서\n 어제 총 ${distRows.totalDistance}Km을 달렸습니다.`,
+                            `프로그라운드에서\n 어제 총 ${calorieRows.totalCalorie}Kcal을 태웠습니다!`,
+                            `프로그라운드에서\n 오늘 ${countRows}명이 달렸습니다.`];
 
         let userType;
         // 비회원
@@ -189,7 +196,7 @@ exports.countRunning = async function (req, res) {
         }
 
         const result = {
-            runningCount: countRows.runningCount,
+            randomState: totalRows[Math.floor(Math.random() * totalRows.length)],
             userType: userType
         }
 
