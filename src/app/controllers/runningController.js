@@ -39,7 +39,7 @@ exports.recordRunning = async function (req, res) {
             const state = 'nonUserId = ' + nonUserId;
             const runningIdRows = await runningDao.getRunningId(state, distance, startTime, endTime, pace, altitude, calorie);
 
-            if (section !== undefined) {
+            if (section !== undefined && section.length > 2) {
                 const sectionSplit = section.slice(1, -1).split(',');
                 for (var i = 0; i < runningIdRows.length; i++) {
                     let runningId = runningIdRows[i].runningId;
@@ -77,7 +77,7 @@ exports.recordRunning = async function (req, res) {
                 state = 'userId = ' + token.userId;
                 runningIdRows = await runningDao.getRunningId(state, distance, startTime, endTime, pace, altitude, calorie);
                 
-                if (section !== undefined) {
+                if (section !== undefined && section.length > 2) {
                     const sectionSplit = section.slice(1, -1).split(',');
                     for (var i = 0; i < runningIdRows.length; i++) {
                         let runningId = runningIdRows[i].runningId;
