@@ -192,7 +192,7 @@ exports.postUserImage = async function (userId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        update User set profileImage = 'https://proground.s3.ap-northeast-2.amazonaws.com/profile/profile_basic_img.png' where userId = ?;
+        update User set profileImage = 'https://proground.s3.ap-northeast-2.amazonaws.com/profile/new_basic_image.png' where userId = ?;
         `
         const params = [userId];
         const [rows] = await connection.query(

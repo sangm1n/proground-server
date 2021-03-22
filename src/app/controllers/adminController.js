@@ -57,7 +57,7 @@ exports.createChallenge = async function (req, res) {
     if (!challengeName || challengeName.length < 1) return res.json(response.successFalse(2010, "챌린지 이름을 입력해주세요."));
     if (!introduction || introduction.length < 1) return res.json(response.successFalse(2020, "챌린지 소개를 입력해주세요."));
     if (!challengeType || challengeType.length < 1) return res.json(response.successFalse(2030, "챌린지 타입을 입력해주세요."));
-    if (!distance || distasnce.length < 1) return res.json(response.successFalse(2040, "챌린지 목표 거리를 입력해주세요."));
+    if (!distance || distance.length < 1) return res.json(response.successFalse(2040, "챌린지 목표 거리를 입력해주세요."));
     if (!personnel || personnel.length < 1) return res.json(response.successFalse(2050, "챌린지 수용 인원를 입력해주세요."));
     if (!minLevel || !maxLevel || minLevel.length < 1 || maxLevel.length < 1) return res.json(response.successFalse(2060, "챌린지 레벨 범위를 올바르게 입력해주세요."));
     if (!startDate || !endDate || startDate.length < 1 || endDate.length < 1) return res.json(response.successFalse(2070, "챌린지 날짜 범위를 올바르게 입력해주세요."));
