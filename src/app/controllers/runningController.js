@@ -126,6 +126,8 @@ exports.recordRunning = async function (req, res) {
     
                             logger.info(`${userId}번 사용자 ${newLevel}로 레벨 업 !`);
                         }
+                    } else {
+                        result = {runningId: runningIdRows[0].runningId};
                     }
                 } else {
                     const state = 'userId = ' + userId;
@@ -154,7 +156,7 @@ exports.recordRunning = async function (req, res) {
                 }
                 return res.json(response.successTrue(1500, "회원 러닝 기록에 성공하였습니다.", result));
             }
-            return res.json(response.successTrue(1500, "회원 러닝 기록에 성공하였습니다."));
+            return res.json(response.successFalse(3500, "일반 유저가 뛴 러닝이 아닙니다."));
         }
     } catch (err) {
         logger.error(`App - recordRunning Query error\n: ${err.message}`);
