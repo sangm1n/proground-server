@@ -73,19 +73,72 @@ exports.postRunning = async function (challengeId, userId, nonUserId, distance, 
 exports.getRunningCount = async function () {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
-        const query = `
-        select count(distinct userId) as runningCount
+        let query = `
+        select count(distinct userId) as countUser
         from Running
-        where isDeleted = 'N'
+        where isDeleted = 'N' and userId != -1
         and str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H') <= endTime
         and endTime <= str_to_date(date_format(date_add(now(), interval +1 day), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H');
+        `;
+        const [userRows] = await connection.query(query);
+
+        query = `
+        select count(distinct nonUserId) as countNonUser
+        from Running
+        where isDeleted = 'N' and nonUserId != -1
+        and str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H') <= endTime
+        and endTime <= str_to_date(date_format(date_add(now(), interval +1 day), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H');
+        `
+        const [nonUserRows] = await connection.query(query);
+        connection.release();
+
+        return userRows[0].countUser + nonUserRows[0].countNonUser;
+    } catch (err) {
+        logger.error(`App - getRunningCount DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.getTotalDistance = async function () {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select sum(v.distance) as totalDistance
+        from (select *
+            from Running
+            where isDeleted = 'N'
+                and str_to_date(date_format(date_add(now(), interval -1 day), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H') <= endTime
+                and endTime <= str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H')
+            group by startTime, endTime, distance, pace, calorie, mapImage) v;
         `;
         const [rows] = await connection.query(query);
         connection.release();
 
         return rows[0];
     } catch (err) {
-        logger.error(`App - getRunningCount DB Connection error\n: ${err.message}`);
+        logger.error(`App - getTotalDistance DB Connection error\n: ${err.message}`);
+        return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
+    }
+}
+
+exports.getTotalCalorie = async function () {
+    try {
+        const connection = await pool.getConnection(async (conn) => conn);
+        const query = `
+        select sum(v.calorie) as totalCalorie
+        from (select *
+            from Running
+            where isDeleted = 'N'
+                and str_to_date(date_format(date_add(now(), interval -1 day), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H') <= endTime
+                and endTime <= str_to_date(date_format(now(), '%Y-%m-%d 00:00:00'), '%Y-%m-%d %H')
+            group by startTime, endTime, distance, pace, calorie, mapImage) v;
+        `;
+        const [rows] = await connection.query(query);
+        connection.release();
+
+        return rows[0];
+    } catch (err) {
+        logger.error(`App - getTotalCalorie DB Connection error\n: ${err.message}`);
         return res.json(response.successFalse(4001, "데이터베이스 연결에 실패하였습니다."));
     }
 }
