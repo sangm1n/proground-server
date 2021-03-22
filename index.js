@@ -20,14 +20,14 @@ if (process.env.NODE_ENV === 'development') {
 
 moment.tz.setDefault("Asia/Seoul");
 
-schedule.scheduleJob('0 0 18 * * *', async function() {
+schedule.scheduleJob('0/10 * * * * *', async function() {
     console.log('현재 ' + new Date());
     const countRows = await runningDao.getRunningCount();  
     const totalFcmRows = await userDao.getAllPushUser();
-    
+
     for (var i = 0; i < totalFcmRows.length; i++) {
         if (totalFcmRows[i].fcmToken !== null) {
-            notification('[프로그라운드]', `헛둘헛둘! 오늘 ${countRows.runningCount}명이 달렸어요! 🏃🏻`, totalFcmRows[i].fcmToken);
+            notification('[프로그라운드]', `헛둘헛둘! 오늘 ${countRows}명이 달렸어요! 🏃🏻`, totalFcmRows[i].fcmToken);
         }
     }
 });
