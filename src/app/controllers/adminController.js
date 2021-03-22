@@ -22,9 +22,9 @@ exports.createLeader = async function (req, res) {
     const uuserId = req.body.userId;
     const introduction = req.body.introduction;
 
-    if (!uuserId) return res.json(response.successFalse(2000, "userId를 입력해주세요."));
+    if (!uuserId || uuserId.length < 1) return res.json(response.successFalse(2000, "userId를 입력해주세요."));
     if (!req.file) return res.json(response.successFalse(2010, "프로필 이미지를 입력해주세요."));
-    if (!introduction) return res.json(response.successFalse(2020, "리더 소개를 입력해주세요."));
+    if (!introduction || introduction.length < 1) return res.json(response.successFalse(2020, "리더 소개를 입력해주세요."));
     
     try {
         const checkRows = await adminDao.checkAdmin(userId);
@@ -54,17 +54,17 @@ exports.createChallenge = async function (req, res) {
     } = req.body;
     
     if (req.file === undefined) return res.json(response.successFalse(2000, "챌린지 이미지를 입력해주세요."));
-    if (!challengeName) return res.json(response.successFalse(2010, "챌린지 이름을 입력해주세요."));
-    if (!introduction) return res.json(response.successFalse(2020, "챌린지 소개를 입력해주세요."));
-    if (!challengeType) return res.json(response.successFalse(2030, "챌린지 타입을 입력해주세요."));
-    if (!distance) return res.json(response.successFalse(2040, "챌린지 목표 거리를 입력해주세요."));
-    if (!personnel) return res.json(response.successFalse(2050, "챌린지 수용 인원를 입력해주세요."));
-    if (!minLevel || !maxLevel) return res.json(response.successFalse(2060, "챌린지 레벨 범위를 올바르게 입력해주세요."));
-    if (!startDate || !endDate) return res.json(response.successFalse(2070, "챌린지 날짜 범위를 올바르게 입력해주세요."));
+    if (!challengeName || challengeName.length < 1) return res.json(response.successFalse(2010, "챌린지 이름을 입력해주세요."));
+    if (!introduction || introduction.length < 1) return res.json(response.successFalse(2020, "챌린지 소개를 입력해주세요."));
+    if (!challengeType || challengeType.length < 1) return res.json(response.successFalse(2030, "챌린지 타입을 입력해주세요."));
+    if (!distance || distasnce.length < 1) return res.json(response.successFalse(2040, "챌린지 목표 거리를 입력해주세요."));
+    if (!personnel || personnel.length < 1) return res.json(response.successFalse(2050, "챌린지 수용 인원를 입력해주세요."));
+    if (!minLevel || !maxLevel || minLevel.length < 1 || maxLevel.length < 1) return res.json(response.successFalse(2060, "챌린지 레벨 범위를 올바르게 입력해주세요."));
+    if (!startDate || !endDate || startDate.length < 1 || endDate.length < 1) return res.json(response.successFalse(2070, "챌린지 날짜 범위를 올바르게 입력해주세요."));
     if (challengeType === 'B' && personnel % 2 !== 0) return res.json(response.successFalse(2110, "경쟁전 수용인원은 반드시 짝수로 입력해주세요."));
 
     // A: 목표달성, B: 경쟁전
-    if (!firstColor && !firstTeamName && !secondColor && !secondTeamName) {
+    if ((!firstColor || firstColor.length < 1) && (!firstTeamName || firstTeamName.length < 1) && (!secondColor || secondColor.length < 1) && (!secondTeamName || secondTeamName.length < 1)) {
         return res.json(response.successFalse(2080, "최소 한 팀의 색상은 입력해주세요."));
     } else if (challengeType === 'B' && (!firstColor || !firstTeamName || !secondColor || !secondTeamName)) {
         return res.json(response.successFalse(2090, "경쟁전은 양 팀의 색상과 팀 이름을 모두 입력해주세요."));
@@ -192,8 +192,8 @@ exports.createNotice = async function (req, res) {
         title, content
     } = req.body;
 
-    if (!title) return res.json(response.successFalse(2000, "공지 제목을 입력해주세요."));
-    if (!content) return res.json(response.successFalse(2010, "공지 내용을 입력해주세요."));
+    if (!title || title.length < 1) return res.json(response.successFalse(2000, "공지 제목을 입력해주세요."));
+    if (!content || content.length < 1) return res.json(response.successFalse(2010, "공지 내용을 입력해주세요."));
     
     try {
         const checkRows = await adminDao.checkAdmin(userId);
