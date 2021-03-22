@@ -40,11 +40,12 @@ exports.recordRunning = async function (req, res) {
             const runningIdRows = await runningDao.getRunningId(state, distance, startTime, endTime, pace, altitude, calorie);
 
             if (section !== undefined) {
+                const sectionSplit = section.slice(1, -1).split(',');
                 for (var i = 0; i < runningIdRows.length; i++) {
                     let runningId = runningIdRows[i].runningId;
                     for (var j = 0; j < section.length; j++) {
                         let distance = parseFloat(j+1).toFixed(2);
-                        let pace = parseFloat(section[j]).toFixed(2);
+                        let pace = parseFloat(sectionSplit[j]).toFixed(2);
                         await runningDao.postRunningSection(runningId, distance, pace);
                     }
                 }
