@@ -20,7 +20,7 @@ if (process.env.NODE_ENV === 'development') {
 
 moment.tz.setDefault("Asia/Seoul");
 
-schedule.scheduleJob('0/10 * * * * *', async function() {
+schedule.scheduleJob('0 0 18 * * *', async function() {
     console.log('현재 ' + new Date());
     const countRows = await runningDao.getRunningCount();  
     const totalFcmRows = await userDao.getAllPushUser();
