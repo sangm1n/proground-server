@@ -182,7 +182,7 @@ exports.countRunning = async function (req, res) {
         const distRows = await runningDao.getTotalDistance();
         const calorieRows = await runningDao.getTotalCalorie();
 
-        if (!countRows || !distRows || !calorieRows) return res.json(response.successFalse(3510, "랜덤 문구 조회에 실패하였습니다."));
+        if (!distRows || !calorieRows) return res.json(response.successFalse(3510, "랜덤 문구 조회에 실패하였습니다."));
 
         const totalRows = [`프로그라운드에서\n어제 총 ${distRows.totalDistance}Km을 달렸습니다.`,
                             `프로그라운드에서\n어제 총 ${calorieRows.totalCalorie}Kcal을 태웠습니다!`,
