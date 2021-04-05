@@ -38,12 +38,13 @@ exports.recordRunning = async function (req, res) {
             
             const state = 'nonUserId = ' + nonUserId;
             const runningIdRows = await runningDao.getRunningId(state, distance, startTime, endTime, pace, altitude, calorie);
-
+            
+            // 21.04.05 비회원 러닝 시 기록 저장 수정
             if (section !== undefined && section.length > 2) {
                 const sectionSplit = section.slice(1, -1).split(',');
                 for (var i = 0; i < runningIdRows.length; i++) {
                     let runningId = runningIdRows[i].runningId;
-                    for (var j = 0; j < section.length; j++) {
+                    for (var j = 0; j < sectionSplit.length; j++) {
                         let distance = parseFloat(j+1).toFixed(2);
                         let pace = parseFloat(sectionSplit[j]).toFixed(2);
                         await runningDao.postRunningSection(runningId, distance, pace);
