@@ -252,14 +252,13 @@ exports.deleteRunning = async function (userId, challengeId) {
                     `;
                     await connection.query(query, [runningId]);
                 }
+
+                query = `
+                update Running set challengeId = -1 where runningId = ?;
+                `;
+                await connection.query(query, [runningId]);
             }
         }
-
-        query = `
-        update Running set isDeleted = 'Y' where userId = ? and challengeId = ?;
-        `;
-        params = [userId, challengeId];
-        await connection.query(query, params);
 
         connection.release();
     } catch (err) {
