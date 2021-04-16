@@ -6,4 +6,6 @@ log/*
 nohup.out
 HELP.md
 config/awsconfig.json
+config/fcm-admin.json
+config/database.js
 config/secret.js
