@@ -9,3 +9,10 @@ config/awsconfig.json
 config/fcm-admin.json
 config/database.js
 config/secret.js
+src/web
+src/webAdmin
+src/app/controllers/indexController.js
+src/app/controllers/responseController.js
+src/app/dao/indexDao.js
+src/app/routes/indexRoute.js
+src/utils/response.js
