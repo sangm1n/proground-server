@@ -11,7 +11,7 @@
  └── 📄 winston.js
 📂 progress
  └── 📄 DATE.md
-📂 middlewares
+📂 src
  └── 📂 app
  |    ├── 📂 controller
  |    |    ├── 📄 activityController.js
