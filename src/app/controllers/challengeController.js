@@ -98,7 +98,7 @@ exports.challengeInfo = async function (req, res) {
             if (checkRegRows === 1 || (checkLeader === 'L' && checkOpenLeader === 1)) {
                 status = 'C';
             } else if (checkLevelRows === 0 || checkMaxRows >= maxChallenge 
-                || dateRows.endDate <= new Date() ||countMembers >= challengeRows.personnel 
+                || dateRows.endDate <= new Date() || countMembers >= challengeRows.personnel 
                 || (checkLeader === 'L' && checkOpenLeader !== 1)) {
                 status = 'B';
             } else {
@@ -149,14 +149,16 @@ exports.registerChallenge = async function (req, res) {
         const checkLevelRows = await challengeDao.checkChallengeLevel(userId, challengeId);
         if (checkLevelRows === 0) return res.json(response.successFalse(3102, "레벨에 맞지 않는 챌린지입니다."));
 
-        const challengeInfoRows = await challengeDao.getChallengePersonnel(challengeId, challengeTeamName);
-        const personnel = challengeInfoRows.personnel;
-        const memberCount = challengeInfoRows.memberCount;
-        if (parseInt(personnel / 2) === memberCount) return res.json(response.successFalse(3104, "이 팀은 수용 인원이 꽉 찼습니다."));
-
         const challengeType = await challengeDao.getChallengeType(challengeId);
         if (challengeType === 'A') challengeTeamName = '목표';
-        
+
+        if (challengeTeamName !== '목표') {
+            const challengeInfoRows = await challengeDao.getChallengePersonnel(challengeId, challengeTeamName);
+            const personnel = challengeInfoRows.personnel;
+            const memberCount = challengeInfoRows.memberCount;
+            if (parseInt(personnel / 2) === memberCount) return res.json(response.successFalse(3104, "이 팀은 수용 인원이 꽉 찼습니다."));
+        }
+
         await challengeDao.postChallenge(userId, challengeId, challengeColor, challengeTeamName);
         return res.json(response.successTrue(1030, "챌린지 참가에 성공하였습니다."));
     } catch (err) {
