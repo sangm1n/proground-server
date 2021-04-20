@@ -98,6 +98,7 @@ exports.getMyChallenge = async function (userId) {
         where c.isDeleted = 'N'
         and uc.isDeleted = 'N'
         and uc.userId = ?
+        and uc.winStatus is null
         group by challengeId;
         `;
         const params = [userId];
@@ -307,7 +308,7 @@ exports.checkMaxChallenge = async function (userId) {
     try {
         const connection = await pool.getConnection(async (conn) => conn);
         const query = `
-        select count(challengeId) as countChallenge from UserChallenge where userId = ? and isDeleted = 'N';
+        select count(challengeId) as countChallenge from UserChallenge where userId = ? and isDeleted = 'N' and winStatus is null;
         `;
         const params = [userId];
         const [rows] = await connection.query(
